@@ -8,6 +8,9 @@
 #include "GPXParser.h"
 #include "GPXHelpers.h"
 
+#define LAT_MAX_LENGTH 18  // maximum number of digits in a latitude string
+#define LON_MAX_LENGTH 18  // maximum number of digits in a longitude string
+
 void deleteGpxData(void *data) {
     free(data);
 }
@@ -21,24 +24,25 @@ char *gpxDataToString(void *data) {
     }
 
     gpxData = (GPXData *)data;
-    newStr = malloc(sizeof(char)*(strlen(gpxData->name)+strlen(gpxData->value)+4));
+    newStr = malloc(strlen(gpxData->name)+strlen(gpxData->value)+4);
     sprintf(newStr, "%s %s", gpxData->name, gpxData->value);
 
     return newStr;
 }
 
 int compareGpxData(const void *first, const void *second) {
-    GPXData *data1;
-    GPXData *data2;
+    // GPXData *data1;
+    // GPXData *data2;
 
-    if (first == NULL || second == NULL) {
-        return 0;
-    }
+    // if (first == NULL || second == NULL) {
+    //     return 0;
+    // }
 
-    data1 = (GPXData *)first;
-    data2 = (GPXData *)second;
+    // data1 = (GPXData *)first;
+    // data2 = (GPXData *)second;
 
-    return strcmp((char *)data1->name, (char *)data2->name);
+    // return strcmp((char *)data1->name, (char *)data2->name);
+    return 0;
 }
 
 void deleteWaypoint(void *data) {
@@ -60,8 +64,11 @@ char *waypointToString(void *data) {
     }
 
     waypoint = (Waypoint *)data;
-    newStr = malloc(sizeof(char)*(strlen(waypoint->name)+3));
-    sprintf(newStr, "%s  ", waypoint->name);
+    int size = strlen(waypoint->name) + LAT_MAX_LENGTH +
+        LON_MAX_LENGTH + 10;
+    newStr = malloc(size);
+    sprintf(newStr, "%s  (%lf, %lf)", waypoint->name,
+        waypoint->latitude, waypoint->longitude);
 
     return newStr;
 }
@@ -71,11 +78,29 @@ int compareWaypoints(const void *first, const void *second) {
 }
 
 void deleteRoute(void *data) {
-
+    if (data == NULL) {
+        return;
+    }
+    Route *route = (Route *)data;
+    free(route->name);
+    freeList(route->waypoints);
+    freeList(route->otherData);
+    free(route);
 }
 
 char *routeToString(void *data) {
+    char *newStr;
+    Route *route;
 
+    if (data == NULL) {
+        return NULL;
+    }
+
+    route = (Route *)data;
+    newStr = malloc(sizeof(char)*(strlen(route->name)+1));
+    sprintf(newStr, "%s", route->name);
+    printf("NEWSTR: %s\n", newStr);
+    return newStr;
 }
 
 int compareRoutes(const void *first, const void *second) {

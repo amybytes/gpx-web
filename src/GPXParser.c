@@ -24,6 +24,16 @@ xmlNode *getGPXRoot(xmlDoc *xml) {
     return NULL; // no <gpx> tag in the xml file
 }
 
+GPXData *createGPXData(char *name, char *value) {
+    GPXData *data = malloc(sizeof(GPXData)+strlen(value)+1);
+    if (data == NULL) {
+        return NULL; // malloc failed; fatal
+    }
+    strcpy(data->name, name);
+    strcpy(data->value, value);
+    return data;
+}
+
 /**
  * Parses a Waypoint from a <wpt> node
  **/
@@ -34,24 +44,27 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
         return NULL; // malloc failed; fatal
     }
 
+    // Invalid initializers; will be checked before return
     wpt->name = NULL;
     wpt->latitude = INVALID_LATITUDE;
     wpt->longitude = INVALID_LONGITUDE;
 
+    // Valid initializers
     wpt->otherData = initializeList(gpxDataToString, deleteGpxData, compareGpxData);
 
+    // Parse waypoint attributes (lat and lon)
     xmlAttr *attr = wptNode->properties;
     xmlNode *val;
     while (attr) {
         if (attr->name != NULL) {
             val = attr->children;
-            if (strequals((char *)attr->name, "latitude")) {
+            if (strequals((char *)attr->name, "lat")) {
                 int result = sscanf((char *)val->content, "%lf", &(wpt->latitude));
                 if (result != 1) {
                     wpt->latitude = INVALID_LATITUDE;
                 }
             }
-            else if (strequals((char *)attr->name, "longitude")) {
+            else if (strequals((char *)attr->name, "lon")) {
                 int result = sscanf((char *)val->content, "%lf", &(wpt->longitude));
                 if (result != 1) {
                     wpt->longitude = INVALID_LONGITUDE;
@@ -61,6 +74,7 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
         attr = attr->next;
     }
 
+    // Parse waypoint children (name and other data)
     xmlNode *child = wptNode->children;
     xmlChar *content;
     while (child) {
@@ -72,7 +86,10 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
                     strcpy(wpt->name, (char *)content);
                 }
                 else {
-                    insertBack(wpt->otherData, (char *)content);
+                    GPXData *data = createGPXData((char *)child->name, (char *)content);
+                    if (data != NULL) {
+                        insertBack(wpt->otherData, data);
+                    }
                 }
                 xmlFree(content);
             }
@@ -80,7 +97,14 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
         child = child->next;
     }
 
+    // Recheck invalid initializers
     if (wpt->name == NULL) {
+        wpt->name = malloc(1);
+        wpt->name[0] = '\0';
+    }
+
+    // Recheck invalid initializers (must pass)
+    if (wpt->latitude == -200 || wpt->longitude == -200) {
         deleteWaypoint(wpt);
         return NULL;
     }
@@ -88,9 +112,70 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
     return wpt;
 }
 
+/**
+ * Parses a route from a <rte> node.
+ **/
 Route *createRoute(xmlNode *rteNode) {
-    // TODO: allocate a Route structure pointer and return it
     printf("CREATING ROUTE\n");
+    Route *rte = malloc(sizeof(Route));
+    if (rte == NULL) {
+        return NULL; // malloc failed; fatal
+    }
+
+    // Invalid initializers; will be checked before return
+    rte->name = NULL;
+
+    // Valid initializers
+    rte->waypoints = initializeList(waypointToString, deleteWaypoint, compareWaypoints);
+    rte->otherData = initializeList(gpxDataToString, deleteGpxData, compareGpxData);
+
+    // Parse route children (rtept, name, and other data)
+    xmlNode *child = rteNode->children;
+    xmlChar *content;
+    while (child) {
+        if (child->name != NULL && child->type == XML_ELEMENT_NODE) {
+            // Parse rtept
+            if (strequals((char *)child->name, "rtept")) {
+                Waypoint *wpt = createWaypoint(child);
+                if (wpt != NULL) {
+                    insertBack(rte->waypoints, wpt);
+                }
+            }
+            else {
+                // Parse nodes with content
+                content = xmlNodeGetContent(child);
+                if (content != NULL) {
+                    // Parse name
+                    if (strequals((char *)child->name, "name")) {
+                        rte->name = malloc(xmlStrlen(content)+1);
+                        strcpy(rte->name, (char *)content);
+                    }
+                    else {
+                        GPXData *data = createGPXData((char *)child->name, (char *)content);
+                        if (data != NULL) {
+                            insertBack(rte->otherData, data);
+                        }
+                    }
+                    xmlFree(content);
+                }
+            }
+        }
+        child = child->next;
+    }
+
+    // Recheck invalid initializer
+    if (rte->name == NULL) {
+        rte->name = malloc(1);
+        rte->name[0] = '\0';
+    }
+
+    return rte;
+}
+
+TrackSegment *createTrackSegment(xmlNode *trkSegNode)
+{
+    // TODO: allocate a TrackSegment structure pointer and return it
+    printf("CREATING TRACK SEGMENT\n");
 }
 
 Track *createTrack(xmlNode *trkNode) {
@@ -113,7 +198,7 @@ GPXdoc *initializeGPXdoc(xmlNode *xmlRoot) {
         return NULL; // malloc() failed; fatal
     }
 
-    // Invalid initializers; will be checked before return (otherwise NULL will be returned)
+    // Invalid initializers; will be checked before return (if still invalid, NULL will be returned)
     gpxDoc->version = -1;
     gpxDoc->creator = NULL;
 
@@ -123,6 +208,7 @@ GPXdoc *initializeGPXdoc(xmlNode *xmlRoot) {
     gpxDoc->routes = initializeList(routeToString, deleteRoute, compareRoutes);
     gpxDoc->tracks = initializeList(trackToString, deleteTrack, compareTracks);
 
+    // Parse gpx attributes (version and creator)
     xmlAttr *attr = xmlRoot->properties;
     xmlNode *val;
     while (attr) {
@@ -194,7 +280,7 @@ GPXdoc *createGPXdoc(char *fileName) {
             else if (strequals((char *)child->name, "rte")) {
                 Route *rte = createRoute(child);
                 if (rte != NULL) {
-                    // insertBack(gpxDoc->routes, rte);
+                    insertBack(gpxDoc->routes, rte);
                 }
             }
             else if (strequals((char *)child->name, "trk")) {
