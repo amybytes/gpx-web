@@ -4,3 +4,15 @@
 .DS_Store?
 **/.DS_Store
 **/.DS_Store?
+
+# Binaries #
+############
+*.o
+*.so
+
+# Test files #
+##############
+*.gpx
+bin/test
+src/test.c
+bin/StructListDemo
