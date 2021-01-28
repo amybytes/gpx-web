@@ -9,3 +9,7 @@
 ##############
 *.gpx
 src/test.c
+
+# Workspace files #
+###################
+.vscode

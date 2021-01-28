@@ -15,7 +15,7 @@ char *gpxDataToString(void *data);
 int compareGpxData(const void *first, const void *second);
 
 void deleteWaypoints(void *data);
-char *waypointsToString(void *data);
+char *waypointToString(void *data);
 int compareWaypoints(const void *first, const void *second);
 
 void deleteRoute(void *data);
@@ -30,7 +30,14 @@ void deleteTrack(void *data);
 char *trackToString(void *data);
 int compareTracks(const void *first, const void *second);
 
+
 int isEmptyString(char *str);
 int isNullOrEmptyString(char *str);
+int getGPXDataSizeInBytes(void *data);
+int getWaypointSizeInBytes(void *data);
+int getRouteSizeInBytes(void *data);
+int getTrackSegmentSizeInBytes(void *data);
+int getTrackSizeInBytes(void *data);
+int getListSizeInBytes(List *list, int (*size_fn)(void *));
 
 #endif

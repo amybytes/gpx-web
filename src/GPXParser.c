@@ -174,13 +174,87 @@ Route *createRoute(xmlNode *rteNode) {
 
 TrackSegment *createTrackSegment(xmlNode *trkSegNode)
 {
-    // TODO: allocate a TrackSegment structure pointer and return it
     printf("CREATING TRACK SEGMENT\n");
+    TrackSegment *trkSeg = malloc(sizeof(TrackSegment));
+    if (trkSeg == NULL) {
+        return NULL;
+    }
+
+    trkSeg->waypoints = initializeList(waypointToString, deleteWaypoint, compareWaypoints);
+
+    // Parse route children (trkpt)
+    xmlNode *child = trkSegNode->children;
+    while (child) {
+        if (child->name != NULL && child->type == XML_ELEMENT_NODE) {
+            // Parse trkpt
+            if (strequals((char *)child->name, "trkpt")) {
+                Waypoint *trkpt = createWaypoint(child);
+                if (trkpt != NULL) {
+                    insertBack(trkSeg->waypoints, trkpt);
+                }
+            }
+        }
+        child = child->next;
+    }
+
+    return trkSeg;
 }
 
 Track *createTrack(xmlNode *trkNode) {
-    // TODO: allocate a Track structure pointer and return it
     printf("CREATING TRACK\n");
+    Track *trk = malloc(sizeof(Track));
+    if (trk == NULL) {
+        return NULL; // malloc failed; fatal
+    }
+
+    // Invalid initializers; will be checked before return
+    trk->name = NULL;
+
+    // Valid initializers
+    trk->segments = initializeList(trackSegmentToString, deleteTrackSegment, compareTrackSegments);
+    trk->otherData = initializeList(gpxDataToString, deleteGpxData, compareGpxData);
+
+    // Parse route children (trkseg, name, and other data)
+    xmlNode *child = trkNode->children;
+    xmlChar *content;
+    while (child) {
+        if (child->name != NULL && child->type == XML_ELEMENT_NODE) {
+            // Parse trkseg
+            if (strequals((char *)child->name, "trkseg")) {
+                TrackSegment *trkSeg = createTrackSegment(child);
+                if (trkSeg != NULL) {
+                    insertBack(trk->segments, trkSeg);
+                }
+            }
+            else {
+                // Parse nodes with content
+                content = xmlNodeGetContent(child);
+                if (content != NULL) {
+                    // Parse name
+                    if (strequals((char *)child->name, "name")) {
+                        trk->name = malloc(xmlStrlen(content)+1);
+                        strcpy(trk->name, (char *)content);
+                    }
+                    else {
+                        GPXData *data = createGPXData((char *)child->name, (char *)content);
+                        if (data != NULL) {
+                            insertBack(trk->otherData, data);
+                        }
+                    }
+                    xmlFree(content);
+                }
+            }
+        }
+        child = child->next;
+    }
+
+    // Recheck invalid initializer
+    if (trk->name == NULL) {
+        trk->name = malloc(1);
+        trk->name[0] = '\0';
+    }
+
+    return trk;
 }
 
 /**
@@ -286,7 +360,7 @@ GPXdoc *createGPXdoc(char *fileName) {
             else if (strequals((char *)child->name, "trk")) {
                 Track *trk = createTrack(child);
                 if (trk != NULL) {
-                    // insertBack(gpxDoc->waypoints, trk);
+                    insertBack(gpxDoc->tracks, trk);
                 }
             }
         }
@@ -315,11 +389,11 @@ char *GPXdocToString(GPXdoc *doc) {
         return NULL; // malloc failed; fatal
     }
     sprintf(str, "namespace: %s\n", doc->namespace);
-    sprintf(str + strlen(str), "version: %lf\n", doc->version);
-    sprintf(str + strlen(str), "creator: %s\n", doc->creator);
-    sprintf(str + strlen(str), "waypoints: %s\n", waypoints);
-    sprintf(str + strlen(str), "routes: %s\n", routes);
-    sprintf(str + strlen(str), "tracks: %s", tracks);
+    sprintf(str + strlen(str), "VERSION: %lf\n", doc->version);
+    sprintf(str + strlen(str), "CREATOR: %s\n", doc->creator);
+    sprintf(str + strlen(str), "WAYPOINTS: %s\n", waypoints);
+    sprintf(str + strlen(str), "ROUTES: %s\n", routes);
+    sprintf(str + strlen(str), "TRACKS: %s", tracks);
     free(waypoints);
     free(routes);
     free(tracks);
