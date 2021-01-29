@@ -2,7 +2,7 @@
  * Name: GPXHelpers.h
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 01/28/2021
+ * Last Modified: 01/29/2021
  */
 
 #ifndef GPXHELPERS_H
@@ -33,11 +33,11 @@ int compareTracks(const void *first, const void *second);
 
 int isEmptyString(char *str);
 int isNullOrEmptyString(char *str);
-int getGPXDataSizeInBytes(void *data);
-int getWaypointSizeInBytes(void *data);
-int getRouteSizeInBytes(void *data);
-int getTrackSegmentSizeInBytes(void *data);
-int getTrackSizeInBytes(void *data);
-int getListSizeInBytes(List *list, int (*size_fn)(void *));
+int getGPXDataStringSize(void *data);
+int getWaypointStringSize(void *data, int indentLevel);
+int getRouteStringSize(void *data);
+int getTrackSegmentStringSize(void *data);
+int getTrackStringSize(void *data);
+int getListStringSize(List *list, int indentLevel);
 
 #endif

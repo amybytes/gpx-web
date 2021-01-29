@@ -2,7 +2,7 @@
  * Name: GPXHelpers.c
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 01/28/2021
+ * Last Modified: 01/29/2021
  **/
 
 #include "GPXParser.h"
@@ -11,7 +11,14 @@
 #define LAT_MAX_LENGTH 19  // maximum number of digits in a latitude string
 #define LON_MAX_LENGTH 19  // maximum number of digits in a longitude string
 
-int getGPXDataSizeInBytes(void *data) {
+#define GPX_DATA_SPACING 2
+#define WAYPOINT_INDENT 2
+#define ROUTE_INDENT 2
+#define ROUTE_WAYPOINT_INDENT 4
+#define TRACK_SEGMENT_INDENT 6
+#define TRACK_SEGMENT_WAYPOINT_INDENT 8
+
+int getGPXDataStringSize(void *data) {
     if (data == NULL) {
         return 0;
     }
@@ -19,50 +26,51 @@ int getGPXDataSizeInBytes(void *data) {
     return strlen(gpxData->name) + strlen(gpxData->value) + 5;
 }
 
-int getWaypointSizeInBytes(void *data) {
+int getWaypointStringSize(void *data, int indentLevel) {
     if (data == NULL) {
         return 0;
     }
     Waypoint *waypoint = (Waypoint *)data;
+    // return strlen(waypoint->name) + LAT_MAX_LENGTH + LON_MAX_LENGTH +
+    //     getListSizeInBytes(waypoint->otherData, &getGPXDataSizeInBytes);
     return strlen(waypoint->name) + LAT_MAX_LENGTH + LON_MAX_LENGTH +
-        getListSizeInBytes(waypoint->otherData, &getGPXDataSizeInBytes);
+        getListStringSize(waypoint->otherData, indentLevel);
 }
 
-int getRouteSizeInBytes(void *data) {
+int getRouteStringSize(void *data) {
     if (data == NULL) {
         return 0;
     }
     Route *route = (Route *)data;
-    return strlen(route->name) + getListSizeInBytes(route->waypoints, &getWaypointSizeInBytes) +
-        getListSizeInBytes(route->otherData, &getGPXDataSizeInBytes);
+    return strlen(route->name) + getListStringSize(route->waypoints, 4) +
+        getListStringSize(route->otherData, 2);
 }
 
-int getTrackSegmentSizeInBytes(void *data) {
+int getTrackSegmentStringSize(void *data) {
     if (data == NULL) {
         return 0;
     }
     TrackSegment *trackSegment = (TrackSegment *)data;
-    return getListSizeInBytes(trackSegment->waypoints, &getWaypointSizeInBytes);
+    return getListStringSize(trackSegment->waypoints, 8);
 }
 
-int getTrackSizeInBytes(void *data) {
+int getTrackStringSize(void *data) {
     if (data == NULL) {
         return 0;
     }
     Track *track = (Track *)data;
-    // printf("%d %d %d\n", strlen(track->name), getListSizeInBytes(track->segments, &getTrackSegmentSizeInBytes), getListSizeInBytes(track->otherData, &getGPXDataSizeInBytes));
-    return strlen(track->name) + getListSizeInBytes(track->segments, &getTrackSegmentSizeInBytes) +
-        getListSizeInBytes(track->otherData, &getGPXDataSizeInBytes);
+    return strlen(track->name) + getListStringSize(track->segments, 6) +
+        getListStringSize(track->otherData, 2);
 }
 
-int getListSizeInBytes(List *list, int (*size_fn)(void *)) {
+int getListStringSize(List *list, int indentLevel) {
     int size = 0;
     void *element;
     ListIterator it = createIterator(list);
     while ((element = nextElement(&it))) {
         // size += size_fn(element);
         char *elementStr = list->printData(element);
-        size += strlen(elementStr);
+        size += strlen(elementStr) + indentLevel+1;
         free(elementStr);
     }
     return size+1;
@@ -92,14 +100,12 @@ char *gpxDataToString(void *data) {
     }
 
     gpxData = (GPXData *)data;
-    int size = getGPXDataSizeInBytes(data);
+    int size = getGPXDataStringSize(data);
     if (size == 0) {
         return NULL;
     }
     newStr = malloc(size);
     sprintf(newStr, "%s: %s", gpxData->name, gpxData->value);
-
-    // printf("%s\n", newStr);
 
     return newStr;
 }
@@ -138,13 +144,14 @@ char *waypointToString(void *data) {
     }
 
     waypoint = (Waypoint *)data;
-    int size = getWaypointSizeInBytes(waypoint);
+    int size = getWaypointStringSize(waypoint, 2);
     if (size == 0) {
         return NULL;
     }
-    newStr = malloc(size+24); // 24 bytes for overhead
-    sprintf(newStr, "  name: %s  lat,lon: (%lf, %lf)", waypoint->name,
-        waypoint->latitude, waypoint->longitude);
+    int overhead = 24;
+    newStr = malloc(size+overhead);
+    sprintf(newStr, "  name: %s  lat: %lf  lon: %lf", waypoint->name,
+        waypoint->latitude, waypoint->longitude); // Overhead (22 bytes)
 
     appendOtherDataToString(waypoint->otherData, newStr);
     
@@ -175,18 +182,19 @@ char *routeToString(void *data) {
     }
 
     route = (Route *)data;
-    int size = getRouteSizeInBytes(route);
+    int size = getRouteStringSize(route);
     if (size == 0) {
         return NULL;
     }
-    int overhead = getLength(route->waypoints)*5 + 24;
+    int overhead = 24;
     newStr = malloc(size+overhead);
-    sprintf(newStr, "  name: %s", route->name);
+    sprintf(newStr, "  name: %s", route->name); // Overhead (8 bytes)
     
     appendOtherDataToString(route->otherData, newStr);
 
-    sprintf(newStr+strlen(newStr), "\n    WAYPOINTS:");
+    sprintf(newStr+strlen(newStr), "\n    WAYPOINTS:"); // Overhead (14 bytes)
 
+    // Append indented waypoints (4 levels of indenting)
     void *element;
     char *elementStr;
     ListIterator it = createIterator(route->waypoints);
@@ -221,16 +229,17 @@ char *trackSegmentToString(void *data) {
     }
 
     trackSegment = (TrackSegment *)data;
-    int size = getTrackSegmentSizeInBytes(trackSegment);
+    int size = getTrackSegmentStringSize(trackSegment);
     if (size == 0) {
         return NULL;
     }
-    int overhead = getLength(trackSegment->waypoints)*9 + 18;
+    int overhead = 11;
     newStr = malloc(size+overhead);
     newStr[0] = '\0';
 
-    sprintf(newStr+strlen(newStr), "WAYPOINTS:");
+    sprintf(newStr+strlen(newStr), "WAYPOINTS:"); // Overhead (10 bytes)
 
+    // Append indented waypoints (8 levels of indenting)
     void *element;
     char *elementStr;
     ListIterator it = createIterator(trackSegment->waypoints);
@@ -267,18 +276,19 @@ char *trackToString(void *data) {
     }
 
     track = (Track *)data;
-    int size = getTrackSizeInBytes(track);
+    int size = getTrackStringSize(track);
     if (size == 0) {
         return NULL;
     }
-    int overhead = getLength(track->segments)*9 + 25;
+    int overhead = 25;
     newStr = malloc(size+overhead);
-    sprintf(newStr, "  name: %s", track->name);
+    sprintf(newStr, "  name: %s", track->name); // overhead (8 bytes)
     
     appendOtherDataToString(track->otherData, newStr);
 
-    sprintf(newStr+strlen(newStr), "\n    SEGMENTS:");
+    sprintf(newStr+strlen(newStr), "\n    SEGMENTS:"); // overhead (14 bytes)
 
+    // Append indented segments (6 levels of indenting)
     void *element;
     char *elementStr;
     ListIterator it = createIterator(track->segments);
@@ -287,8 +297,6 @@ char *trackToString(void *data) {
         sprintf(newStr+strlen(newStr), "\n      %s", elementStr);
         free(elementStr);
     }
-
-    printf("calculated: %d  actual: %d\n", size+overhead, strlen(newStr)+1);
 
     return newStr;
 }

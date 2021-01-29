@@ -388,7 +388,7 @@ char *GPXdocToString(GPXdoc *doc) {
     if (str == NULL) {
         return NULL; // malloc failed; fatal
     }
-    sprintf(str, "namespace: %s\n", doc->namespace);
+    sprintf(str, "NAMESPACE: %s\n", doc->namespace);
     sprintf(str + strlen(str), "VERSION: %lf\n", doc->version);
     sprintf(str + strlen(str), "CREATOR: %s\n", doc->creator);
     sprintf(str + strlen(str), "WAYPOINTS: %s\n", waypoints);
