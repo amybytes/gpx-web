@@ -2,7 +2,7 @@
  * Name: GPXHelpers.h
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 01/22/2021
+ * Last Modified: 01/28/2021
  */
 
 #ifndef GPXHELPERS_H

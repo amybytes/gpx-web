@@ -2,7 +2,7 @@
  * Name: GPXHelpers.c
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 01/22/2021
+ * Last Modified: 01/28/2021
  **/
 
 #include "GPXParser.h"
@@ -33,7 +33,6 @@ int getRouteSizeInBytes(void *data) {
         return 0;
     }
     Route *route = (Route *)data;
-    printf("%d %d %d\n", strlen(route->name), getListSizeInBytes(route->waypoints, &getWaypointSizeInBytes), getListSizeInBytes(route->otherData, &getGPXDataSizeInBytes));
     return strlen(route->name) + getListSizeInBytes(route->waypoints, &getWaypointSizeInBytes) +
         getListSizeInBytes(route->otherData, &getGPXDataSizeInBytes);
 }
@@ -51,6 +50,7 @@ int getTrackSizeInBytes(void *data) {
         return 0;
     }
     Track *track = (Track *)data;
+    // printf("%d %d %d\n", strlen(track->name), getListSizeInBytes(track->segments, &getTrackSegmentSizeInBytes), getListSizeInBytes(track->otherData, &getGPXDataSizeInBytes));
     return strlen(track->name) + getListSizeInBytes(track->segments, &getTrackSegmentSizeInBytes) +
         getListSizeInBytes(track->otherData, &getGPXDataSizeInBytes);
 }
@@ -99,6 +99,8 @@ char *gpxDataToString(void *data) {
     newStr = malloc(size);
     sprintf(newStr, "%s: %s", gpxData->name, gpxData->value);
 
+    // printf("%s\n", newStr);
+
     return newStr;
 }
 
@@ -145,6 +147,7 @@ char *waypointToString(void *data) {
         waypoint->latitude, waypoint->longitude);
 
     appendOtherDataToString(waypoint->otherData, newStr);
+    
     return newStr;
 }
 
@@ -268,7 +271,7 @@ char *trackToString(void *data) {
     if (size == 0) {
         return NULL;
     }
-    int overhead = getLength(track->segments)*7 + 24;
+    int overhead = getLength(track->segments)*9 + 25;
     newStr = malloc(size+overhead);
     sprintf(newStr, "  name: %s", track->name);
     
@@ -284,6 +287,8 @@ char *trackToString(void *data) {
         sprintf(newStr+strlen(newStr), "\n      %s", elementStr);
         free(elementStr);
     }
+
+    printf("calculated: %d  actual: %d\n", size+overhead, strlen(newStr)+1);
 
     return newStr;
 }
