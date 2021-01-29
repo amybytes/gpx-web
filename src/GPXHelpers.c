@@ -42,8 +42,8 @@ int getRouteStringSize(void *data) {
         return 0;
     }
     Route *route = (Route *)data;
-    return strlen(route->name) + getListStringSize(route->waypoints, 4) +
-        getListStringSize(route->otherData, 2);
+    return strlen(route->name) + getListStringSize(route->waypoints, ROUTE_WAYPOINT_INDENT) +
+        getListStringSize(route->otherData, GPX_DATA_SPACING);
 }
 
 int getTrackSegmentStringSize(void *data) {
@@ -51,7 +51,7 @@ int getTrackSegmentStringSize(void *data) {
         return 0;
     }
     TrackSegment *trackSegment = (TrackSegment *)data;
-    return getListStringSize(trackSegment->waypoints, 8);
+    return getListStringSize(trackSegment->waypoints, TRACK_SEGMENT_WAYPOINT_INDENT);
 }
 
 int getTrackStringSize(void *data) {
@@ -59,8 +59,8 @@ int getTrackStringSize(void *data) {
         return 0;
     }
     Track *track = (Track *)data;
-    return strlen(track->name) + getListStringSize(track->segments, 6) +
-        getListStringSize(track->otherData, 2);
+    return strlen(track->name) + getListStringSize(track->segments, TRACK_SEGMENT_INDENT) +
+        getListStringSize(track->otherData, GPX_DATA_SPACING);
 }
 
 int getListStringSize(List *list, int indentLevel) {
@@ -68,7 +68,6 @@ int getListStringSize(List *list, int indentLevel) {
     void *element;
     ListIterator it = createIterator(list);
     while ((element = nextElement(&it))) {
-        // size += size_fn(element);
         char *elementStr = list->printData(element);
         size += strlen(elementStr) + indentLevel+1;
         free(elementStr);
@@ -144,7 +143,7 @@ char *waypointToString(void *data) {
     }
 
     waypoint = (Waypoint *)data;
-    int size = getWaypointStringSize(waypoint, 2);
+    int size = getWaypointStringSize(waypoint, WAYPOINT_INDENT);
     if (size == 0) {
         return NULL;
     }

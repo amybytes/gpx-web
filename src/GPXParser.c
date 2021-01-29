@@ -38,7 +38,6 @@ GPXData *createGPXData(char *name, char *value) {
  * Parses a Waypoint from a <wpt> node
  **/
 Waypoint *createWaypoint(xmlNode *wptNode) {
-    printf("CREATING WAYPOINT\n");
     Waypoint *wpt = malloc(sizeof(Waypoint));
     if (wpt == NULL) {
         return NULL; // malloc failed; fatal
@@ -116,7 +115,6 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
  * Parses a route from a <rte> node.
  **/
 Route *createRoute(xmlNode *rteNode) {
-    printf("CREATING ROUTE\n");
     Route *rte = malloc(sizeof(Route));
     if (rte == NULL) {
         return NULL; // malloc failed; fatal
@@ -174,7 +172,6 @@ Route *createRoute(xmlNode *rteNode) {
 
 TrackSegment *createTrackSegment(xmlNode *trkSegNode)
 {
-    printf("CREATING TRACK SEGMENT\n");
     TrackSegment *trkSeg = malloc(sizeof(TrackSegment));
     if (trkSeg == NULL) {
         return NULL;
@@ -201,7 +198,6 @@ TrackSegment *createTrackSegment(xmlNode *trkSegNode)
 }
 
 Track *createTrack(xmlNode *trkNode) {
-    printf("CREATING TRACK\n");
     Track *trk = malloc(sizeof(Track));
     if (trk == NULL) {
         return NULL; // malloc failed; fatal
@@ -344,7 +340,6 @@ GPXdoc *createGPXdoc(char *fileName) {
     xmlNode *child = xmlRoot->children;
     while (child) {
         if (child->name != NULL && child->type == XML_ELEMENT_NODE) {
-            printf("%s\n", child->name);
             if (strequals((char *)child->name, "wpt")) {
                 Waypoint *wpt = createWaypoint(child);
                 if (wpt != NULL) {
@@ -417,4 +412,153 @@ void deleteGPXdoc(GPXdoc *doc) {
         freeList(doc->tracks);
     }
     free(doc);
+}
+
+int getNumWaypoints(const GPXdoc *doc) {
+    if (doc == NULL) {
+        return 0;
+    }
+
+    if (doc->waypoints == NULL) {
+        return 0;
+    }
+
+    return getLength(doc->waypoints);
+}
+
+int getNumRoutes(const GPXdoc *doc) {
+    if (doc == NULL) {
+        return 0;
+    }
+
+    if (doc->routes == NULL) {
+        return 0;
+    }
+
+    return getLength(doc->routes);
+}
+
+int getNumTracks(const GPXdoc *doc) {
+    if (doc == NULL) {
+        return 0;
+    }
+
+    if (doc->tracks == NULL) {
+        return 0;
+    }
+
+    return getLength(doc->tracks);
+}
+
+int getNumSegments(const GPXdoc *doc) {
+    if (doc == NULL) {
+        return 0;
+    }
+
+    if (doc->tracks == NULL) {
+        return 0;
+    }
+
+    int numSegments = 0;
+    void *element;
+    Track *track;
+    ListIterator it = createIterator(doc->tracks);
+    while ((element = nextElement(&it))) {
+        track = (Track *)element;
+        if (track->segments != NULL) {
+            numSegments += getLength(track->segments);
+        }
+    }
+
+    return numSegments;
+}
+
+int getNumWaypointsGPXData(List *waypoints) {
+    if (waypoints == NULL) {
+        return 0;
+    }
+    int numData = 0;
+    void *element;
+    Waypoint *waypoint;
+    ListIterator it = createIterator(waypoints);
+    while ((element = nextElement(&it))) {
+        waypoint = (Waypoint *)element;
+        if (strlen(waypoint->name) > 0) {
+            numData++;
+        }
+        if (waypoint->otherData != NULL) {
+            numData += getLength(waypoint->otherData);
+        }
+    }
+    return numData;
+}
+
+int getNumTrackSegmentsGPXData(List *trackSegments) {
+    if (trackSegments == NULL) {
+        return 0;
+    }
+    int numData = 0;
+    void *element;
+    TrackSegment *trackSegment;
+    ListIterator it = createIterator(trackSegments);
+    while ((element = nextElement(&it))) {
+        trackSegment = (TrackSegment *)element;
+        numData += getNumWaypointsGPXData(trackSegment->waypoints);
+    }
+    return numData;
+}
+
+int getNumGPXData(const GPXdoc *doc) {
+    if (doc == NULL) {
+        return 0;
+    }
+
+    if (doc->waypoints == NULL || doc->routes == NULL || doc->tracks == NULL) {
+        return 0;
+    }
+
+    int numData = 0;
+    
+    numData += getNumWaypointsGPXData(doc->waypoints);
+
+    void *element;
+    Route *route;
+    ListIterator it = createIterator(doc->routes);
+    while ((element = nextElement(&it))) {
+        route = (Route *)element;
+        if (strlen(route->name) > 0) {
+            numData++;
+        }
+        numData += getNumWaypointsGPXData(route->waypoints);
+        if (route->otherData != NULL) {
+            numData += getLength(route->otherData);
+        }
+    }
+
+    Track *track;
+    it = createIterator(doc->tracks);
+    while ((element = nextElement(&it))) {
+        track = (Track *)element;
+        if (strlen(track->name) > 0) {
+            numData++;
+        }
+        if (track->otherData != NULL) {
+            numData += getLength(track->otherData);
+        }
+        numData += getNumTrackSegmentsGPXData(track->segments);
+    }
+
+    return numData;
+}
+
+Waypoint *getWaypoint(const GPXdoc *doc, char *name) {
+
+}
+
+Track *getTrack(const GPXdoc *doc, char *name) {
+
+}
+
+Route *getRoute(const GPXdoc *doc, char *name) {
+
 }
