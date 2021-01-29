@@ -552,13 +552,58 @@ int getNumGPXData(const GPXdoc *doc) {
 }
 
 Waypoint *getWaypoint(const GPXdoc *doc, char *name) {
-
+    if (doc == NULL) {
+        return NULL;
+    }
+    if (doc->waypoints == NULL) {
+        return NULL;
+    }
+    Waypoint *waypoint;
+    void *element;
+    ListIterator it = createIterator(doc->waypoints);
+    while ((element = nextElement(&it))) {
+        waypoint = (Waypoint *)element;
+        if (strequals(waypoint->name, name)) {
+            return waypoint;
+        }
+    }
+    return NULL;
 }
 
 Track *getTrack(const GPXdoc *doc, char *name) {
-
+    if (doc == NULL) {
+        return NULL;
+    }
+    if (doc->tracks == NULL) {
+        return NULL;
+    }
+    Track *track;
+    void *element;
+    ListIterator it = createIterator(doc->tracks);
+    while ((element = nextElement(&it))) {
+        track = (Track *)element;
+        if (strequals(track->name, name)) {
+            return track;
+        }
+    }
+    return NULL;
 }
 
 Route *getRoute(const GPXdoc *doc, char *name) {
-
+    if (doc == NULL) {
+        return NULL;
+    }
+    if (doc->routes == NULL) {
+        return NULL;
+    }
+    Route *route;
+    void *element;
+    ListIterator it = createIterator(doc->routes);
+    while ((element = nextElement(&it))) {
+        route = (Route *)element;
+        if (strequals(route->name, name)) {
+            return route;
+        }
+    }
+    return NULL;
 }

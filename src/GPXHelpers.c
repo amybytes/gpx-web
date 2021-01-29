@@ -110,18 +110,17 @@ char *gpxDataToString(void *data) {
 }
 
 int compareGpxData(const void *first, const void *second) {
-    // GPXData *data1;
-    // GPXData *data2;
+    GPXData *data1;
+    GPXData *data2;
 
-    // if (first == NULL || second == NULL) {
-    //     return 0;
-    // }
+    if (first == NULL || second == NULL) {
+        return 0;
+    }
 
-    // data1 = (GPXData *)first;
-    // data2 = (GPXData *)second;
+    data1 = (GPXData *)first;
+    data2 = (GPXData *)second;
 
-    // return strcmp((char *)data1->name, (char *)data2->name);
-    return 0;
+    return strcmp(data1->name, data2->name);
 }
 
 void deleteWaypoint(void *data) {
@@ -158,7 +157,17 @@ char *waypointToString(void *data) {
 }
 
 int compareWaypoints(const void *first, const void *second) {
-    
+    Waypoint *waypoint1;
+    Waypoint *waypoint2;
+
+    if (first == NULL || second == NULL) {
+        return 0;
+    }
+
+    waypoint1 = (Waypoint *)first;
+    waypoint2 = (Waypoint *)second;
+
+    return strcmp(waypoint1->name, waypoint2->name);
 }
 
 void deleteRoute(void *data) {
@@ -207,7 +216,17 @@ char *routeToString(void *data) {
 }
 
 int compareRoutes(const void *first, const void *second) {
-    
+    Route *route1;
+    Route *route2;
+
+    if (first == NULL || second == NULL) {
+        return 0;
+    }
+
+    route1 = (Route *)first;
+    route2 = (Route *)second;
+
+    return strcmp(route1->name, route2->name);
 }
 
 void deleteTrackSegment(void *data) {
@@ -252,7 +271,28 @@ char *trackSegmentToString(void *data) {
 }
 
 int compareTrackSegments(const void *first, const void *second) {
-    
+    TrackSegment *segment1;
+    TrackSegment *segment2;
+
+    if (first == NULL || second == NULL) {
+        return 0;
+    }
+
+    segment1 = (GPXData *)first;
+    segment2 = (GPXData *)second;
+
+    ListIterator it1 = createIterator(segment1->waypoints);
+    ListIterator it2 = createIterator(segment2->waypoints);
+    void *element1;
+    void *element2;
+
+    while ((element1 = nextElement(&it1)) && (element2 = nextElement(&it2))) {
+        if (!compareWaypoints(element1, element2)) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 void deleteTrack(void *data) {
@@ -301,7 +341,17 @@ char *trackToString(void *data) {
 }
 
 int compareTracks(const void *first, const void *second) {
-    return -1;
+    Track *track1;
+    Track *track2;
+    
+    if (first == NULL || second == NULL) {
+        return 0;
+    }
+
+    track1 = (Track *)first;
+    track2 = (Track *)second;
+    
+    return strcmp(track1->name, track2->name);
 }
 
 int isEmptyString(char *str) {
