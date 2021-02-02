@@ -2,9 +2,10 @@
  * Name: GPXHelpers.c
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 01/29/2021
+ * Last Modified: 02/1/2021
  **/
 
+#include <stdbool.h>
 #include "GPXParser.h"
 #include "GPXHelpers.h"
 
@@ -18,51 +19,103 @@
 #define TRACK_SEGMENT_INDENT 6
 #define TRACK_SEGMENT_WAYPOINT_INDENT 8
 
-int getGPXDataStringSize(void *data) {
-    if (data == NULL) {
+/**
+ * Calculates the size in bytes needed to represent a given GPXData structure.
+ * 
+ * Parameters:
+ *   gpxData -- the data to be evaluated
+ * 
+ * Returns:
+ *   The size of the GPXData as a string in bytes
+ **/
+int getGPXDataStringSize(GPXData *gpxData) {
+    if (gpxData == NULL) {
         return 0;
     }
-    GPXData *gpxData = (GPXData *)data;
     return strlen(gpxData->name) + strlen(gpxData->value) + 5;
 }
 
-int getWaypointStringSize(void *data, int indentLevel) {
-    if (data == NULL) {
+/**
+ * Calculates the size in bytes needed to represent a given Waypoint structure.
+ * 
+ * Parameters:
+ *   waypoint -- the data to be evaluated
+ *   indentLevel -- the number of spaces to be used for indenting extra waypoint data
+ *                  when representing it as a string (added to total size)
+ * 
+ * Returns:
+ *   The size of the Waypoint as a string in bytes
+ **/
+int getWaypointStringSize(Waypoint *waypoint, int indentLevel) {
+    if (waypoint == NULL) {
         return 0;
     }
-    Waypoint *waypoint = (Waypoint *)data;
-    // return strlen(waypoint->name) + LAT_MAX_LENGTH + LON_MAX_LENGTH +
-    //     getListSizeInBytes(waypoint->otherData, &getGPXDataSizeInBytes);
     return strlen(waypoint->name) + LAT_MAX_LENGTH + LON_MAX_LENGTH +
         getListStringSize(waypoint->otherData, indentLevel);
 }
 
-int getRouteStringSize(void *data) {
-    if (data == NULL) {
+/**
+ * Calculates the size in bytes needed to represent a given Route structure.
+ * 
+ * Parameters:
+ *   route -- the data to be evaluated
+ * 
+ * Returns:
+ *   The size of the Route as a string in bytes
+ **/
+int getRouteStringSize(Route *route) {
+    if (route == NULL) {
         return 0;
     }
-    Route *route = (Route *)data;
     return strlen(route->name) + getListStringSize(route->waypoints, ROUTE_WAYPOINT_INDENT) +
         getListStringSize(route->otherData, GPX_DATA_SPACING);
 }
 
-int getTrackSegmentStringSize(void *data) {
-    if (data == NULL) {
+/**
+ * Calculates the size in bytes needed to represent a given TrackSegment structure.
+ * 
+ * Parameters:
+ *   trackSegment -- the data to be evaluated
+ * 
+ * Returns:
+ *   The size of the TrackSegment as a string in bytes
+ **/
+int getTrackSegmentStringSize(TrackSegment *trackSegment) {
+    if (trackSegment == NULL) {
         return 0;
     }
-    TrackSegment *trackSegment = (TrackSegment *)data;
     return getListStringSize(trackSegment->waypoints, TRACK_SEGMENT_WAYPOINT_INDENT);
 }
 
-int getTrackStringSize(void *data) {
-    if (data == NULL) {
+/**
+ * Calculates the size in bytes needed to represent a given Track structure.
+ * 
+ * Parameters:
+ *   track -- the data to be evaluated
+ * 
+ * Returns:
+ *   The size of the Track as a string in bytes
+ **/
+int getTrackStringSize(Track *track) {
+    if (track == NULL) {
         return 0;
     }
-    Track *track = (Track *)data;
     return strlen(track->name) + getListStringSize(track->segments, TRACK_SEGMENT_INDENT) +
         getListStringSize(track->otherData, GPX_DATA_SPACING);
 }
 
+/**
+ * Calculates the size in bytes needed to represent a list of data
+ * as a string.
+ * 
+ * Parameters:
+ *   list -- the list to be evaluated
+ *   indentLevel -- the number of spaces to be used for indenting each element
+ *                  in the list when representing them as a string (added to total size)
+ * 
+ * Returns:
+ *   The size of the GPXData as a string in bytes
+ **/
 int getListStringSize(List *list, int indentLevel) {
     int size = 0;
     void *element;
@@ -75,6 +128,14 @@ int getListStringSize(List *list, int indentLevel) {
     return size+1;
 }
 
+/**
+ * Appends the GPXData elements from otherData to the end of a string
+ * to create a chain of attributes. 
+ * 
+ * Parameters:
+ *   otherData -- the list of GPXData to be appended
+ *   str -- the string to append the data to (the string itself is modified)
+ **/
 void appendOtherDataToString(List *otherData, char *str) {
     void *element;
     char *dataStr;
@@ -278,8 +339,8 @@ int compareTrackSegments(const void *first, const void *second) {
         return 0;
     }
 
-    segment1 = (GPXData *)first;
-    segment2 = (GPXData *)second;
+    segment1 = (TrackSegment *)first;
+    segment2 = (TrackSegment *)second;
 
     ListIterator it1 = createIterator(segment1->waypoints);
     ListIterator it2 = createIterator(segment2->waypoints);
@@ -360,4 +421,46 @@ int isEmptyString(char *str) {
 
 int isNullOrEmptyString(char *str) {
     return str == NULL || isEmptyString(str);
+}
+
+bool compareWaypointsByName(const void *ptr1, const void *ptr2) {
+    Waypoint *wpt1;
+    Waypoint *wpt2;
+
+    if (ptr1 == NULL || ptr2 == NULL) {
+        return false;
+    }
+
+    wpt1 = (Waypoint *)ptr1;
+    wpt2 = (Waypoint *)ptr2;
+
+    return strequals(wpt1->name, wpt2->name);
+}
+
+bool compareRoutesByName(const void *ptr1, const void *ptr2) {
+    Route *rte1;
+    Route *rte2;
+
+    if (ptr1 == NULL || ptr2 == NULL) {
+        return false;
+    }
+
+    rte1 = (Route *)ptr1;
+    rte2 = (Route *)ptr2;
+
+    return strequals(rte1->name, rte2->name);
+}
+
+bool compareTracksByName(const void *ptr1, const void *ptr2) {
+    Track *trk1;
+    Track *trk2;
+
+    if (ptr1 == NULL || ptr2 == NULL) {
+        return false;
+    }
+
+    trk1 = (Track *)ptr1;
+    trk2 = (Track *)ptr2;
+
+    return strequals(trk1->name, trk2->name);
 }

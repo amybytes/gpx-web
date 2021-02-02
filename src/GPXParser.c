@@ -2,7 +2,7 @@
  * Name: GPXParser.c
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 01/28/2021
+ * Last Modified: 02/1/2021
  */
 
 #include <stdlib.h>
@@ -15,6 +15,12 @@
 /**
  * Gets the root xmlNode containing the <gpx> tag and returns it.
  * If the <gpx> tag does not exist, returns NULL.
+ * 
+ * Parameters:
+ *   xml -- the first node in the xml document
+ * 
+ * Returns:
+ *   The gpx (root) node
  **/
 xmlNode *getGPXRoot(xmlDoc *xml) {
     xmlNode *gpx = xmlDocGetRootElement(xml);
@@ -24,6 +30,16 @@ xmlNode *getGPXRoot(xmlDoc *xml) {
     return NULL; // no <gpx> tag in the xml file
 }
 
+/**
+ * Creates a new GPXData structure with a given name and value.
+ * 
+ * Parameters:
+ *   name -- the name of the data
+ *   value -- the value of the data
+ * 
+ * Returns:
+ *   A pointer to a new GPXData structure
+ **/
 GPXData *createGPXData(char *name, char *value) {
     GPXData *data = malloc(sizeof(GPXData)+strlen(value)+1);
     if (data == NULL) {
@@ -35,7 +51,13 @@ GPXData *createGPXData(char *name, char *value) {
 }
 
 /**
- * Parses a Waypoint from a <wpt> node
+ * Parses a Waypoint from a <wpt> node.
+ * 
+ * Parameters:
+ *   wptNode -- the xml node containing the waypoint data
+ * 
+ * Returns:
+ *   A pointer to a new Waypoint structure
  **/
 Waypoint *createWaypoint(xmlNode *wptNode) {
     Waypoint *wpt = malloc(sizeof(Waypoint));
@@ -113,6 +135,12 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
 
 /**
  * Parses a route from a <rte> node.
+ * 
+ * Parameters:
+ *   rteNode -- the xml node containing the route data
+ * 
+ * Returns:
+ *   A pointer to a new Route structure
  **/
 Route *createRoute(xmlNode *rteNode) {
     Route *rte = malloc(sizeof(Route));
@@ -170,11 +198,20 @@ Route *createRoute(xmlNode *rteNode) {
     return rte;
 }
 
+/**
+ * Parses a track segment from a <trkseg> node.
+ * 
+ * Parameters:
+ *   trkSegNode -- the xml node containing the track segment data
+ * 
+ * Returns:
+ *   A pointer to a new TrackSegment structure
+ **/
 TrackSegment *createTrackSegment(xmlNode *trkSegNode)
 {
     TrackSegment *trkSeg = malloc(sizeof(TrackSegment));
     if (trkSeg == NULL) {
-        return NULL;
+        return NULL; // malloc failed; fatal
     }
 
     trkSeg->waypoints = initializeList(waypointToString, deleteWaypoint, compareWaypoints);
@@ -197,6 +234,15 @@ TrackSegment *createTrackSegment(xmlNode *trkSegNode)
     return trkSeg;
 }
 
+/**
+ * Parses a track from a <trk> node.
+ * 
+ * Parameters:
+ *   trkNode -- the xml node containing the track data
+ * 
+ * Returns:
+ *   A pointer to a new Track structure
+ **/
 Track *createTrack(xmlNode *trkNode) {
     Track *trk = malloc(sizeof(Track));
     if (trk == NULL) {
@@ -255,7 +301,13 @@ Track *createTrack(xmlNode *trkNode) {
 
 /**
  * Initializes a GPXdoc pointer with the attributes in the <gpx> tag.
- * Returns a pointer to a new GPXdoc structure, or NULL if the <gpx>
+ * 
+ * Parameters:
+ *   xmlRoot -- the root xml node (<gpx> tag)
+ * 
+ * Returns:
+ *   A pointer to a new GPXdoc structure, or NULL if the gpx data is invalid,
+ *   or a parsing error occurs
  **/
 GPXdoc *initializeGPXdoc(xmlNode *xmlRoot) {
     xmlNs *namespace = xmlRoot->ns;
@@ -319,13 +371,22 @@ GPXdoc *initializeGPXdoc(xmlNode *xmlRoot) {
     return gpxDoc;
 }
 
+/**
+ * Creates a new GPX document from a gpx file.
+ * 
+ * Parameters:
+ *   fileName -- the name of the gpx file
+ * 
+ * Returns:
+ *   A pointer to a new GPXdoc structure, or NULL if a parsing error occurs
+ **/
 GPXdoc *createGPXdoc(char *fileName) {
     xmlDoc *xml; // Parsed xml document
     xmlNode *xmlRoot; // <gpx> root node
     
     xml = xmlReadFile(fileName, NULL, 0);
     if (xml == NULL) {
-        return NULL; // Parsing failed
+        return NULL; // xml parsing failed
     }
     xmlRoot = getGPXRoot(xml);
     if (xmlRoot == NULL) {
@@ -368,6 +429,15 @@ GPXdoc *createGPXdoc(char *fileName) {
     return gpxDoc;
 }
 
+/**
+ * Converts a GPX document to a readable string.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to convert
+ * 
+ * Returns:
+ *   A string representing the GPX document
+ **/
 char *GPXdocToString(GPXdoc *doc) {
     char *waypoints = toString(doc->waypoints);
     char *routes = toString(doc->routes);
@@ -395,6 +465,12 @@ char *GPXdocToString(GPXdoc *doc) {
     return str;
 }
 
+/**
+ * Deletes a GPX doc and all of its contents from memory.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to delete
+ **/
 void deleteGPXdoc(GPXdoc *doc) {
     if (doc == NULL) {
         return;
@@ -414,42 +490,84 @@ void deleteGPXdoc(GPXdoc *doc) {
     free(doc);
 }
 
+/**
+ * Gets the total number of waypoints from a GPX document.
+ * This number only includes waypoints defined directly in
+ * the <gpx> scope.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to evaluate
+ * 
+ * Returns:
+ *   The number of waypoints in the GPX document
+ **/
 int getNumWaypoints(const GPXdoc *doc) {
     if (doc == NULL) {
-        return 0;
+        return 0; // doc is invalid; cannot evaluate
     }
 
     if (doc->waypoints == NULL) {
-        return 0;
+        return 0; // doc is invalid; cannot evaluate
     }
 
     return getLength(doc->waypoints);
 }
 
+/**
+ * Gets the total number of routes from a GPX document.
+ * This number only includes routes defined directly in
+ * the <gpx> scope.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to evaluate
+ * 
+ * Returns:
+ *   The number of routes in the GPX document
+ **/
 int getNumRoutes(const GPXdoc *doc) {
     if (doc == NULL) {
-        return 0;
+        return 0; // doc is invalid; cannot evaluate
     }
 
     if (doc->routes == NULL) {
-        return 0;
+        return 0; // doc is invalid; cannot evaluate
     }
 
     return getLength(doc->routes);
 }
 
+/**
+ * Gets the total number of tracks from a GPX document.
+ * This number only includes waypoints defined directly in
+ * the <gpx> scope.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to evaluate
+ * 
+ * Returns:
+ *   The number of tracks in the GPX document
+ **/
 int getNumTracks(const GPXdoc *doc) {
     if (doc == NULL) {
-        return 0;
+        return 0; // doc is invalid; cannot evaluate
     }
 
     if (doc->tracks == NULL) {
-        return 0;
+        return 0; // doc is invalid; cannot evaluate
     }
 
     return getLength(doc->tracks);
 }
 
+/**
+ * Gets the total number of track segments from all tracks in a GPX document.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to evaluate
+ * 
+ * Returns:
+ *   The number of track segments in the GPX document
+ **/
 int getNumSegments(const GPXdoc *doc) {
     if (doc == NULL) {
         return 0;
@@ -473,6 +591,16 @@ int getNumSegments(const GPXdoc *doc) {
     return numSegments;
 }
 
+/**
+ * Gets the total number of data elements (GPXData structures) in a list
+ * of waypoints.
+ * 
+ * Parameters:
+ *   waypoints -- the list of waypoints to evaluate
+ * 
+ * Returns:
+ *   The number of GPXData structures in the list of waypoints
+ **/
 int getNumWaypointsGPXData(List *waypoints) {
     if (waypoints == NULL) {
         return 0;
@@ -493,6 +621,16 @@ int getNumWaypointsGPXData(List *waypoints) {
     return numData;
 }
 
+/**
+ * Gets the total number of data elements (GPXData structures) in a list
+ * of track segments.
+ * 
+ * Parameters:
+ *   trackSegments -- the list of trackSegments to evaluate
+ * 
+ * Returns:
+ *   The number of GPXData structures in the list of track segments
+ **/
 int getNumTrackSegmentsGPXData(List *trackSegments) {
     if (trackSegments == NULL) {
         return 0;
@@ -508,19 +646,29 @@ int getNumTrackSegmentsGPXData(List *trackSegments) {
     return numData;
 }
 
+/**
+ * Gets the total number of data elements (GPXData structures) from a GPX document.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to evaluate
+ * 
+ * Returns:
+ *   The number of GPXData structures in the GPX document
+ **/
 int getNumGPXData(const GPXdoc *doc) {
     if (doc == NULL) {
         return 0;
     }
-
     if (doc->waypoints == NULL || doc->routes == NULL || doc->tracks == NULL) {
-        return 0;
+        return 0; // one or more structures are invalid; cannot evaluate
     }
 
     int numData = 0;
     
+    // Add the number of GPXData structures from waypoints
     numData += getNumWaypointsGPXData(doc->waypoints);
 
+    // Add the number of GPXData structures from routes
     void *element;
     Route *route;
     ListIterator it = createIterator(doc->routes);
@@ -535,6 +683,7 @@ int getNumGPXData(const GPXdoc *doc) {
         }
     }
 
+    // Add the number of GPXData structures from tracks
     Track *track;
     it = createIterator(doc->tracks);
     while ((element = nextElement(&it))) {
@@ -551,59 +700,104 @@ int getNumGPXData(const GPXdoc *doc) {
     return numData;
 }
 
+/**
+ * Gets the first waypoint from a GPXdoc with a given name.
+ * 
+ * Parameters:
+ *   doc -- the GPXdoc to search
+ *   name -- the waypoint name to search for
+ * 
+ * Returns:
+ *   A pointer to the first waypoint, or NULL if no waypoint is found
+ **/
 Waypoint *getWaypoint(const GPXdoc *doc, char *name) {
     if (doc == NULL) {
         return NULL;
     }
-    if (doc->waypoints == NULL) {
+    if (doc->waypoints == NULL || name == NULL) {
         return NULL;
     }
-    Waypoint *waypoint;
-    void *element;
-    ListIterator it = createIterator(doc->waypoints);
-    while ((element = nextElement(&it))) {
-        waypoint = (Waypoint *)element;
-        if (strequals(waypoint->name, name)) {
-            return waypoint;
-        }
+    // Build search target
+    Waypoint targetWaypoint;
+    targetWaypoint.name = malloc(strlen(name)+1);
+    if (targetWaypoint.name == NULL) {
+        return NULL; // malloc failed; fatal
     }
-    return NULL;
+    strcpy(targetWaypoint.name, name);
+
+    void *result = findElement(doc->waypoints, &compareWaypointsByName, &targetWaypoint);
+
+    free(targetWaypoint.name);
+    if (result == NULL) {
+        return NULL; // no waypoint found
+    }
+    return (Waypoint *)result;
 }
 
+/**
+ * Gets the first track from a GPXdoc with a given name.
+ * 
+ * Parameters:
+ *   doc -- the GPXdoc to search
+ *   name -- the track name to search for
+ * 
+ * Returns:
+ *   A pointer to the first track, or NULL if no track is found
+ **/
 Track *getTrack(const GPXdoc *doc, char *name) {
     if (doc == NULL) {
         return NULL;
     }
-    if (doc->tracks == NULL) {
+    if (doc->tracks == NULL || name == NULL) {
         return NULL;
     }
-    Track *track;
-    void *element;
-    ListIterator it = createIterator(doc->tracks);
-    while ((element = nextElement(&it))) {
-        track = (Track *)element;
-        if (strequals(track->name, name)) {
-            return track;
-        }
+    // Build search target
+    Track targetTrack;
+    targetTrack.name = malloc(strlen(name)+1);
+    if (targetTrack.name == NULL) {
+        return NULL; // malloc failed; fatal
     }
-    return NULL;
+    strcpy(targetTrack.name, name);
+
+    void *result = findElement(doc->tracks, &compareTracksByName, &targetTrack);
+
+    free(targetTrack.name);
+    if (result == NULL) {
+        return NULL; // no track found
+    }
+    return (Track *)result;
 }
 
+/**
+ * Gets the first route from a GPXdoc with a given name.
+ * 
+ * Parameters:
+ *   doc -- the GPXdoc to search
+ *   name -- the route name to search for
+ * 
+ * Returns:
+ *   A pointer to the first route, or NULL if no route is found
+ **/
 Route *getRoute(const GPXdoc *doc, char *name) {
     if (doc == NULL) {
         return NULL;
     }
-    if (doc->routes == NULL) {
+    if (doc->routes == NULL || name == NULL) {
         return NULL;
     }
-    Route *route;
-    void *element;
-    ListIterator it = createIterator(doc->routes);
-    while ((element = nextElement(&it))) {
-        route = (Route *)element;
-        if (strequals(route->name, name)) {
-            return route;
-        }
+    // Build search target
+    Route targetRoute;
+    targetRoute.name = malloc(strlen(name)+1);
+    if (targetRoute.name == NULL) {
+        return NULL; // malloc failed; fatal
     }
-    return NULL;
+    strcpy(targetRoute.name, name);
+
+    void *result = findElement(doc->routes, &compareRoutesByName, &targetRoute);
+
+    free(targetRoute.name);
+    if (result == NULL) {
+        return NULL; // no route found
+    }
+    return (Route *)result;
 }
