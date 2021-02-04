@@ -2,7 +2,7 @@
  * Name: GPXHelpers.c
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 02/1/2021
+ * Last Modified: 02/04/2021
  **/
 
 #include "GPXParser.h"
