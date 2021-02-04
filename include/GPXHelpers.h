@@ -8,6 +8,7 @@
 #ifndef GPXHELPERS_H
 #define GPXHELPERS_H
 
+#include <stdbool.h>
 #include "GPXParser.h"
 
 #define strequals(a, b) (!strcmp(a, b))

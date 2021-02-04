@@ -104,6 +104,9 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
             if (content != NULL) {
                 if (strequals((char *)child->name, "name")) {
                     wpt->name = malloc(xmlStrlen(content)+1);
+                    if (wpt->name == NULL) {
+                        break;
+                    }
                     strcpy(wpt->name, (char *)content);
                 }
                 else {
@@ -174,6 +177,9 @@ Route *createRoute(xmlNode *rteNode) {
                     // Parse name
                     if (strequals((char *)child->name, "name")) {
                         rte->name = malloc(xmlStrlen(content)+1);
+                        if (rte->name == NULL) {
+                            break;
+                        }
                         strcpy(rte->name, (char *)content);
                     }
                     else {
@@ -275,6 +281,9 @@ Track *createTrack(xmlNode *trkNode) {
                     // Parse name
                     if (strequals((char *)child->name, "name")) {
                         trk->name = malloc(xmlStrlen(content)+1);
+                        if (trk->name == NULL) {
+                            break;
+                        }
                         strcpy(trk->name, (char *)content);
                     }
                     else {
@@ -344,6 +353,9 @@ GPXdoc *initializeGPXdoc(xmlNode *xmlRoot) {
             }
             else if (strequals((char *)attr->name, "creator")) {
                 gpxDoc->creator = malloc(xmlStrlen(val->content)+1);
+                if (gpxDoc->creator == NULL) {
+                    break;
+                }
                 strcpy(gpxDoc->creator, (char *)val->content);
             }
         }
