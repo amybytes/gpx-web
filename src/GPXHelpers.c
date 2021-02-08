@@ -2,7 +2,10 @@
  * Name: GPXHelpers.c
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 02/04/2021
+ * Last Modified: 02/07/2021
+ * 
+ * Note: Portions of the code in this file are based on sample
+ *       code provided by the instructor.
  **/
 
 #include "GPXParser.h"
@@ -146,10 +149,25 @@ void appendOtherDataToString(List *otherData, char *str) {
     }
 }
 
+/**
+ * Frees the pointer to a GPXData structure.
+ * 
+ * Parameters:
+ *   data -- the pointer to free
+ **/
 void deleteGpxData(void *data) {
     free(data);
 }
 
+/**
+ * Creates a string representation of GPXData in the format "name: value".
+ * 
+ * Parameters:
+ *   data -- a pointer to the GPXData
+ * 
+ * Returns:
+ *   A string representing the GPXData
+ **/
 char *gpxDataToString(void *data) {
     char *newStr;
     GPXData *gpxData;
@@ -172,10 +190,15 @@ char *gpxDataToString(void *data) {
     return newStr;
 }
 
+/** Unused function. Required for compatibility with Linked List API. **/
 int compareGpxData(const void *first, const void *second) {
     return 0;
 }
 
+/**
+ * Frees a pointer to a Waypoint structure and all of its
+ * child pointers.
+ **/
 void deleteWaypoint(void *data) {
     if (data == NULL) {
         return;
@@ -186,6 +209,15 @@ void deleteWaypoint(void *data) {
     free(waypoint);
 }
 
+/**
+ * Creates a string representation of a Waypoint structure.
+ * 
+ * Parameters:
+ *   data -- a pointer to the Waypoint
+ * 
+ * Returns:
+ *   A string representing the Waypoint
+ **/
 char *waypointToString(void *data) {
     char *newStr;
     Waypoint *waypoint;
@@ -217,6 +249,13 @@ int compareWaypoints(const void *first, const void *second) {
     return 0;
 }
 
+/**
+ * Frees the pointer to a Route structure and all of its
+ * child pointers.
+ * 
+ * Parameters:
+ *   data -- a pointer to the Route
+ **/
 void deleteRoute(void *data) {
     if (data == NULL) {
         return;
@@ -228,6 +267,17 @@ void deleteRoute(void *data) {
     free(route);
 }
 
+/**
+ * Creates a string representation of a Route structure, including
+ * all route points and all "other data". The route will be indented
+ * by two spaces.
+ * 
+ * Parameters:
+ *   data -- a pointer to the Route
+ * 
+ * Returns:
+ *   A string representation for the Route
+ **/
 char *routeToString(void *data) {
     char *newStr;
     Route *route;
@@ -270,6 +320,13 @@ int compareRoutes(const void *first, const void *second) {
     return 0;
 }
 
+/**
+ * Frees the pointer to a TrackSegment structure and all of its
+ * child pointers.
+ * 
+ * Parameters:
+ *   data -- a pointer to the TrackSegment
+ **/
 void deleteTrackSegment(void *data) {
     if (data == NULL) {
         return;
@@ -279,6 +336,16 @@ void deleteTrackSegment(void *data) {
     free(trackSegment);
 }
 
+/**
+ * Creates a string representation of a TrackSegment structure, including
+ * all waypoints. The track segment will be indented by eight spaces.
+ * 
+ * Parameters:
+ *   data -- a pointer to the TrackSegment
+ * 
+ * Returns:
+ *   A string representation for the TrackSegment
+ **/
 char *trackSegmentToString(void *data) {
     char *newStr;
     TrackSegment *trackSegment;
@@ -319,6 +386,13 @@ int compareTrackSegments(const void *first, const void *second) {
     return 0;
 }
 
+/**
+ * Frees the pointer to a Track structure and all of its
+ * child pointers.
+ * 
+ * Parameters:
+ *   data -- a pointer to the Track
+ **/
 void deleteTrack(void *data) {
     if (data == NULL) {
         return;
@@ -330,6 +404,17 @@ void deleteTrack(void *data) {
     free(track);
 }
 
+/**
+ * Creates a string representation of a Track structure, including
+ * all track segments and all "other data". The track will be indented
+ * by two spaces.
+ * 
+ * Parameters:
+ *   data -- a pointer to the Track
+ * 
+ * Returns:
+ *   A string representation for the Track
+ **/
 char *trackToString(void *data) {
     char *newStr;
     Track *track;
@@ -372,6 +457,17 @@ int compareTracks(const void *first, const void *second) {
     return 0;
 }
 
+/**
+ * Checks if a string is ONLY empty.
+ * 
+ * Parameters:
+ *   str -- the string to evaluate
+ * 
+ * Returns:
+ *   1 if the string is an empty string, or 0 if
+ *   the string is NULL or has a length greater
+ *   than zero
+ **/
 int isEmptyString(char *str) {
     return str != NULL && strequals(str, "");
 }
@@ -380,6 +476,17 @@ int isNullOrEmptyString(char *str) {
     return str == NULL || isEmptyString(str);
 }
 
+/**
+ * Checks for equality between two waypoint names.
+ * 
+ * Parameters:
+ *   ptr1 -- the first waypoint to compare
+ *   ptr2 -- the second waypoint to compare
+ * 
+ * Returns:
+ *   true (1) if the waypoints have the same name, or
+ *   false (0) if the waypoints have different names
+ **/
 bool compareWaypointsByName(const void *ptr1, const void *ptr2) {
     Waypoint *wpt1;
     Waypoint *wpt2;
@@ -394,6 +501,17 @@ bool compareWaypointsByName(const void *ptr1, const void *ptr2) {
     return strequals(wpt1->name, wpt2->name);
 }
 
+/**
+ * Checks for equality between two route names.
+ * 
+ * Parameters:
+ *   ptr1 -- the first route to compare
+ *   ptr2 -- the second route to compare
+ * 
+ * Returns:
+ *   true (1) if the routes have the same name, or
+ *   false (0) if the routes have different names
+ **/
 bool compareRoutesByName(const void *ptr1, const void *ptr2) {
     Route *rte1;
     Route *rte2;
@@ -408,6 +526,17 @@ bool compareRoutesByName(const void *ptr1, const void *ptr2) {
     return strequals(rte1->name, rte2->name);
 }
 
+/**
+ * Checks for equality between two track names.
+ * 
+ * Parameters:
+ *   ptr1 -- the first track to compare
+ *   ptr2 -- the second track to compare
+ * 
+ * Returns:
+ *   true (1) if the tracks have the same name, or
+ *   false (0) if the tracks have different names
+ **/
 bool compareTracksByName(const void *ptr1, const void *ptr2) {
     Track *trk1;
     Track *trk2;

@@ -2,7 +2,7 @@
  * Name: GPXParser.c
  * Author: Ethan Rowan (1086586)
  * Date Created: 01/19/2021
- * Last Modified: 02/04/2021
+ * Last Modified: 02/07/2021
  */
 
 #include <stdlib.h>
@@ -65,6 +65,9 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
         return NULL; // malloc failed; fatal
     }
 
+    int latInitialized = 0; // keep track of whether latitude is initialized or not
+    int lonInitialized = 0; // keep track of whether longitude is initialized or not
+
     // Invalid initializers; will be checked before return
     wpt->name = NULL;
     wpt->latitude = INVALID_LATITUDE;
@@ -81,14 +84,14 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
             val = attr->children;
             if (strequals((char *)attr->name, "lat")) {
                 int result = sscanf((char *)val->content, "%lf", &(wpt->latitude));
-                if (result != 1) {
-                    wpt->latitude = INVALID_LATITUDE;
+                if (result == 1) {
+                    latInitialized = 1;
                 }
             }
             else if (strequals((char *)attr->name, "lon")) {
                 int result = sscanf((char *)val->content, "%lf", &(wpt->longitude));
-                if (result != 1) {
-                    wpt->longitude = INVALID_LONGITUDE;
+                if (result == 1) {
+                    lonInitialized = 1;
                 }
             }
         }
@@ -114,6 +117,10 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
                     if (data != NULL) {
                         insertBack(wpt->otherData, data);
                     }
+                    else {
+                        deleteWaypoint(wpt);
+                        return NULL;
+                    }
                 }
                 xmlFree(content);
             }
@@ -128,7 +135,7 @@ Waypoint *createWaypoint(xmlNode *wptNode) {
     }
 
     // Recheck invalid initializers (must pass)
-    if (wpt->latitude == -200 || wpt->longitude == -200) {
+    if (!latInitialized || !lonInitialized) {
         deleteWaypoint(wpt);
         return NULL;
     }
@@ -169,6 +176,10 @@ Route *createRoute(xmlNode *rteNode) {
                 if (wpt != NULL) {
                     insertBack(rte->waypoints, wpt);
                 }
+                else {
+                    deleteRoute(rte);
+                    return NULL;
+                }
             }
             else {
                 // Parse nodes with content
@@ -186,6 +197,10 @@ Route *createRoute(xmlNode *rteNode) {
                         GPXData *data = createGPXData((char *)child->name, (char *)content);
                         if (data != NULL) {
                             insertBack(rte->otherData, data);
+                        }
+                        else {
+                            deleteRoute(rte);
+                            return NULL;
                         }
                     }
                     xmlFree(content);
@@ -232,6 +247,10 @@ TrackSegment *createTrackSegment(xmlNode *trkSegNode)
                 if (trkpt != NULL) {
                     insertBack(trkSeg->waypoints, trkpt);
                 }
+                else {
+                    deleteTrackSegment(trkSeg);
+                    return NULL;
+                }
             }
         }
         child = child->next;
@@ -273,6 +292,10 @@ Track *createTrack(xmlNode *trkNode) {
                 if (trkSeg != NULL) {
                     insertBack(trk->segments, trkSeg);
                 }
+                else {
+                    deleteTrack(trk);
+                    return NULL;
+                }
             }
             else {
                 // Parse nodes with content
@@ -290,6 +313,10 @@ Track *createTrack(xmlNode *trkNode) {
                         GPXData *data = createGPXData((char *)child->name, (char *)content);
                         if (data != NULL) {
                             insertBack(trk->otherData, data);
+                        }
+                        else {
+                            deleteTrack(trk);
+                            return NULL;
                         }
                     }
                     xmlFree(content);
@@ -402,13 +429,19 @@ GPXdoc *createGPXdoc(char *fileName) {
     }
     xmlRoot = getGPXRoot(xml);
     if (xmlRoot == NULL) {
+        xmlFreeDoc(xml);
+        xmlCleanupParser();
         return NULL; // File does not contain <gpx> tag
     }
 
     GPXdoc *gpxDoc = initializeGPXdoc(xmlRoot);
     if (gpxDoc == NULL) {
+        xmlFreeDoc(xml);
+        xmlCleanupParser();
         return NULL;
     }
+
+    bool parsingErr = 0;
 
     xmlNode *child = xmlRoot->children;
     while (child) {
@@ -418,11 +451,17 @@ GPXdoc *createGPXdoc(char *fileName) {
                 if (wpt != NULL) {
                     insertBack(gpxDoc->waypoints, wpt);
                 }
+                else {
+                    parsingErr = 1; // The parsed waypoint is invalid
+                }
             }
             else if (strequals((char *)child->name, "rte")) {
                 Route *rte = createRoute(child);
                 if (rte != NULL) {
                     insertBack(gpxDoc->routes, rte);
+                }
+                else {
+                    parsingErr = 1; // The parsed route is invalid
                 }
             }
             else if (strequals((char *)child->name, "trk")) {
@@ -430,6 +469,16 @@ GPXdoc *createGPXdoc(char *fileName) {
                 if (trk != NULL) {
                     insertBack(gpxDoc->tracks, trk);
                 }
+                else {
+                    parsingErr = 1; // The parsed track is invalid
+                }
+            }
+
+            if (parsingErr) {
+                xmlFreeDoc(xml);
+                xmlCleanupParser();
+                deleteGPXdoc(gpxDoc);
+                return NULL;
             }
         }
         child = child->next;
@@ -451,6 +500,9 @@ GPXdoc *createGPXdoc(char *fileName) {
  *   A string representing the GPX document
  **/
 char *GPXdocToString(GPXdoc *doc) {
+    if (doc == NULL) {
+        return NULL;
+    }
     char *waypoints = toString(doc->waypoints);
     char *routes = toString(doc->routes);
     char *tracks = toString(doc->tracks);
@@ -485,7 +537,7 @@ char *GPXdocToString(GPXdoc *doc) {
  **/
 void deleteGPXdoc(GPXdoc *doc) {
     if (doc == NULL) {
-        return;
+        return; // nothing to do
     }
     if (doc->creator != NULL) {
         free(doc->creator);
