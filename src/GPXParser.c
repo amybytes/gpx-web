@@ -422,6 +422,10 @@ GPXdoc *initializeGPXdoc(xmlNode *xmlRoot) {
 GPXdoc *createGPXdoc(char *fileName) {
     xmlDoc *xml; // Parsed xml document
     xmlNode *xmlRoot; // <gpx> root node
+
+    if (fileName == NULL) {
+        return NULL;
+    }
     
     xml = xmlReadFile(fileName, NULL, 0);
     if (xml == NULL) {
