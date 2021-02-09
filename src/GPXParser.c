@@ -429,6 +429,7 @@ GPXdoc *createGPXdoc(char *fileName) {
     
     xml = xmlReadFile(fileName, NULL, 0);
     if (xml == NULL) {
+        xmlCleanupParser();
         return NULL; // xml parsing failed
     }
     xmlRoot = getGPXRoot(xml);
@@ -505,6 +506,9 @@ GPXdoc *createGPXdoc(char *fileName) {
  **/
 char *GPXdocToString(GPXdoc *doc) {
     if (doc == NULL) {
+        return NULL;
+    }
+    if (doc->waypoints == NULL || doc->routes == NULL || doc->tracks == NULL) {
         return NULL;
     }
     char *waypoints = toString(doc->waypoints);
