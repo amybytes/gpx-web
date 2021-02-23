@@ -8,6 +8,7 @@
 # Test files #
 ##############
 *.gpx
+*.xsd
 src/test.c
 
 # Workspace files #
