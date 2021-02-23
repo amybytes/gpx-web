@@ -12,29 +12,19 @@
 #define INVALID_LATITUDE -200
 #define INVALID_LONGITUDE -200
 
-xmlNode *createXMLGPXData(GPXData *gpxData, xmlNs *namespace) {
-    xmlNode *gpxDataNode = NULL;
+xmlNode *createXMLGPXData(GPXData *gpxData, xmlNode *parent) {
     if (gpxData == NULL) {
         return NULL;
     }
-
-    gpxDataNode = xmlNewNode(namespace, BAD_CAST gpxData->name); 
-    if (gpxDataNode == NULL) {
-        return NULL;
-    }
-    xmlNodeAddContent(gpxDataNode, BAD_CAST gpxData->value);
-
-    return gpxDataNode;
+    return xmlNewChild(parent, NULL, BAD_CAST gpxData->name, BAD_CAST gpxData->value); 
 }
 
-xmlNode *createXMLWaypoint(Waypoint *waypoint, xmlNs *namespace, char *name) {
+xmlNode *createXMLWaypoint(Waypoint *waypoint, xmlNode *parent, char *name) {
     xmlNode *wpt = NULL;
-    xmlNode *nameNode;
     char *latitude;
     char *longitude;
     ListIterator it;
     void *element;
-    xmlNode *tempNode;
 
     if (waypoint == NULL) {
         return NULL;
@@ -45,7 +35,7 @@ xmlNode *createXMLWaypoint(Waypoint *waypoint, xmlNs *namespace, char *name) {
     longitude = malloc(20);
     sprintf(longitude, "%lf", waypoint->longitude);
 
-    wpt = xmlNewNode(namespace, BAD_CAST name);
+    wpt = xmlNewChild(parent, NULL, BAD_CAST name, NULL);
     if (wpt == NULL) {
         return NULL;
     }
@@ -57,19 +47,13 @@ xmlNode *createXMLWaypoint(Waypoint *waypoint, xmlNs *namespace, char *name) {
 
     /* Create <name> node and add it to <wpt> */
     if (!isEmptyString(waypoint->name)) {
-        nameNode = xmlNewNode(namespace, BAD_CAST "name");
-        xmlNodeAddContent(nameNode, BAD_CAST waypoint->name);
-        xmlAddChild(wpt, nameNode);
+        xmlNewChild(wpt, NULL, BAD_CAST "name", BAD_CAST waypoint->name);
     }
 
     /* Add all other data to <wpt> */
     it = createIterator(waypoint->otherData);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLGPXData((GPXData *)element, namespace);
-        if (tempNode != NULL) {
-            xmlAddChild(wpt, tempNode);
-        }
-        else {
+        if (!createXMLGPXData((GPXData *)element, wpt)) {
             xmlFreeNode(wpt);
             return NULL;
         }
@@ -78,35 +62,27 @@ xmlNode *createXMLWaypoint(Waypoint *waypoint, xmlNs *namespace, char *name) {
     return wpt;
 }
 
-xmlNode *createXMLRoute(Route *route, xmlNs *namespace) {
+xmlNode *createXMLRoute(Route *route, xmlNode *parent) {
     xmlNode *rte = NULL;
-    xmlNode *nameNode;
     ListIterator it;
     void *element;
-    xmlNode *tempNode;
 
     if (route == NULL) {
         return NULL;
     }
 
-    rte = xmlNewNode(namespace, BAD_CAST "rte");
+    rte = xmlNewChild(parent, NULL, BAD_CAST "rte", NULL);
     if (rte == NULL) {
         return NULL;
     }
 
     /* Create <name> node and add it to <rte> */
-    nameNode = xmlNewNode(namespace, BAD_CAST "name");
-    xmlNodeAddContent(nameNode, BAD_CAST route->name);
-    xmlAddChild(rte, nameNode);
+    xmlNewChild(rte, NULL, BAD_CAST "name", BAD_CAST route->name);
 
     /* Add all other data to <rte> */
     it = createIterator(route->otherData);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLGPXData((GPXData *)element, namespace);
-        if (tempNode != NULL) {
-            xmlAddChild(rte, tempNode);
-        }
-        else {
+        if (!createXMLGPXData((GPXData *)element, rte)) {
             xmlFreeNode(rte);
             return NULL;
         }
@@ -115,11 +91,7 @@ xmlNode *createXMLRoute(Route *route, xmlNs *namespace) {
     /* Add all waypoints to <rte> */
     it = createIterator(route->waypoints);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLWaypoint((Waypoint *)element, namespace, "rtept");
-        if (tempNode != NULL) {
-            xmlAddChild(rte, tempNode);
-        }
-        else {
+        if (!createXMLWaypoint((Waypoint *)element, rte, "rtept")) {
             xmlFreeNode(rte);
             return NULL;
         }
@@ -128,17 +100,16 @@ xmlNode *createXMLRoute(Route *route, xmlNs *namespace) {
     return rte;
 }
 
-xmlNode *createXMLTrackSegment(TrackSegment *trackSegment, xmlNs *namespace) {
+xmlNode *createXMLTrackSegment(TrackSegment *trackSegment, xmlNode *parent) {
     xmlNode *trkSeg = NULL;
     ListIterator it;
     void *element;
-    xmlNode *tempNode;
 
     if (trackSegment == NULL) {
         return NULL;
     }
 
-    trkSeg = xmlNewNode(namespace, BAD_CAST "trkseg");
+    trkSeg = xmlNewChild(parent, NULL, BAD_CAST "trkseg", NULL);
     if (trkSeg == NULL) {
         return NULL;
     }
@@ -146,11 +117,7 @@ xmlNode *createXMLTrackSegment(TrackSegment *trackSegment, xmlNs *namespace) {
     /* Add all waypoints to <trkseg> */
     it = createIterator(trackSegment->waypoints);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLWaypoint((Waypoint *)element, namespace, "trkpt");
-        if (tempNode != NULL) {
-            xmlAddChild(trkSeg, tempNode);
-        }
-        else {
+        if (!createXMLWaypoint((Waypoint *)element, trkSeg, "trkpt")) {
             xmlFreeNode(trkSeg);
             return NULL;
         }
@@ -159,35 +126,27 @@ xmlNode *createXMLTrackSegment(TrackSegment *trackSegment, xmlNs *namespace) {
     return trkSeg;
 }
 
-xmlNode *createXMLTrack(Track *track, xmlNs *namespace) {
+xmlNode *createXMLTrack(Track *track, xmlNode *parent) {
     xmlNode *trk = NULL;
-    xmlNode *nameNode;
     ListIterator it;
     void *element;
-    xmlNode *tempNode;
 
     if (track == NULL) {
         return NULL;
     }
 
-    trk = xmlNewNode(namespace, BAD_CAST "trk");
+    trk = xmlNewChild(parent, NULL, BAD_CAST "trk", NULL);
     if (trk == NULL) {
         return NULL;
     }
 
     /* Create <name> node and add it to <trk> */
-    nameNode = xmlNewNode(namespace, BAD_CAST "name");
-    xmlNodeAddContent(nameNode, BAD_CAST track->name);
-    xmlAddChild(trk, nameNode);
+    xmlNewChild(trk, NULL, BAD_CAST "name", BAD_CAST track->name);
 
     /* Add all other data to <trk> */
     it = createIterator(track->otherData);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLGPXData((GPXData *)element, namespace);
-        if (tempNode != NULL) {
-            xmlAddChild(trk, tempNode);
-        }
-        else {
+        if (!createXMLGPXData((GPXData *)element, trk)) {
             xmlFreeNode(trk);
             return NULL;
         }
@@ -196,11 +155,7 @@ xmlNode *createXMLTrack(Track *track, xmlNs *namespace) {
     /* Add all waypoints to <trk> */
     it = createIterator(track->segments);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLTrackSegment((TrackSegment *)element, namespace);
-        if (tempNode != NULL) {
-            xmlAddChild(trk, tempNode);
-        }
-        else {
+        if (!createXMLTrackSegment((TrackSegment *)element, trk)) {
             xmlFreeNode(trk);
             return NULL;
         }
@@ -212,7 +167,6 @@ xmlNode *createXMLTrack(Track *track, xmlNs *namespace) {
 xmlDoc *createXMLdoc(GPXdoc *gpxDoc) {
     xmlDoc *xml = NULL;
     xmlNode *root = NULL;
-    xmlNode *tempNode = NULL;
     ListIterator it;
     void *element;
     char *version;
@@ -237,12 +191,7 @@ xmlDoc *createXMLdoc(GPXdoc *gpxDoc) {
     /* Add waypoint nodes */
     it = createIterator(gpxDoc->waypoints);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLWaypoint((Waypoint *)element, ns, "wpt");
-        if (tempNode != NULL) {
-            xmlAddChild(root, tempNode);
-        }
-        else {
-            xmlFreeNode(tempNode);
+        if (!createXMLWaypoint((Waypoint *)element, root, "wpt")) {
             xmlFreeDoc(xml);
             return NULL;
         }
@@ -251,12 +200,7 @@ xmlDoc *createXMLdoc(GPXdoc *gpxDoc) {
     /* Add route nodes */
     it = createIterator(gpxDoc->routes);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLRoute((Route *)element, ns);
-        if (tempNode != NULL) {
-            xmlAddChild(root, tempNode);
-        }
-        else {
-            xmlFreeNode(tempNode);
+        if (!createXMLRoute((Route *)element, root)) {
             xmlFreeDoc(xml);
             return NULL;
         }
@@ -265,12 +209,7 @@ xmlDoc *createXMLdoc(GPXdoc *gpxDoc) {
     /* Add track nodes */
     it = createIterator(gpxDoc->tracks);
     while ((element = nextElement(&it)) != NULL) {
-        tempNode = createXMLTrack((Track *)element, ns);
-        if (tempNode != NULL) {
-            xmlAddChild(root, tempNode);
-        }
-        else {
-            xmlFreeNode(tempNode);
+        if (!createXMLTrack((Track *)element, root)) {
             xmlFreeDoc(xml);
             return NULL;
         }
@@ -834,6 +773,7 @@ GPXdoc *createValidGPXdoc(char *fileName, char *gpxSchemaFile) {
     if (validateGPXDoc(doc, gpxSchemaFile)) {
         return doc;
     }
+    deleteGPXdoc(doc);
     return NULL;
 }
 
@@ -847,17 +787,20 @@ bool validateGPXDoc(GPXdoc *doc, char *fileName) {
     schema = xmlSchemaParse(parserCtxt);
     xmlSchemaFreeParserCtxt(parserCtxt);
     xml = createXMLdoc(doc);
+
+    int status = 1;
     if (xml == NULL) {
         return false;
     }
-
-    validCtxt = xmlSchemaNewValidCtxt(schema);
-    int status = xmlSchemaValidateDoc(validCtxt, xml);
-    xmlSchemaFreeValidCtxt(validCtxt);
-    xmlFreeDoc(xml);
+    else {
+        validCtxt = xmlSchemaNewValidCtxt(schema);
+        status = xmlSchemaValidateDoc(validCtxt, xml);
+        xmlSchemaFreeValidCtxt(validCtxt);
+    }
     if (schema != NULL) {
         xmlSchemaFree(schema);
     }
+    xmlFreeDoc(xml);
     xmlSchemaCleanupTypes();
     xmlCleanupParser();
 
