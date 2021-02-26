@@ -1129,3 +1129,113 @@ Route *getRoute(const GPXdoc *doc, char *name) {
     }
     return (Route *)result;
 }
+
+/**
+ * Based on the Haversine formula provided in the assignment description
+ * (https://www.movable-type.co.uk/scripts/latlong.html).
+ **/
+float getDistance(float sourceLat, float sourceLon, float destLat, float destLon) {
+    int R = 6371*1000;
+    float lat1Rad = sourceLat*M_PI/180.0;
+    float lat2Rad = destLat*M_PI/180.0;
+    float deltaLat = (destLat - sourceLat)*M_PI/180.0;
+    float deltaLon = (destLon - sourceLon)*M_PI/180.0;
+    float a = sin(deltaLat/2)*sin(deltaLat/2) + cos(lat1Rad) * cos(lat2Rad) *
+              sin(deltaLon/2)*sin(deltaLon/2);
+    float c = 2*atan2(sqrt(a), sqrt(1-a));
+    return R*c;
+}
+
+float getWaypointDistance(Waypoint *wpt1, Waypoint *wpt2) {
+    if (wpt1 == NULL || wpt2 == NULL) {
+        return 0;
+    }
+    return getDistance((float)(wpt1->latitude), (float)(wpt1->longitude), (float)(wpt2->latitude), (float)(wpt2->longitude));
+}
+
+float getPathDistance(List *waypoints) {
+    if (waypoints == NULL) {
+        return 0;
+    }
+
+    float len = 0;
+    Waypoint *lastWpt;
+    Waypoint *wpt;
+    ListIterator it;
+
+    it = createIterator(waypoints);
+    lastWpt = NULL;
+    for (int i = 0; i < getLength(waypoints); i++) {
+        wpt = (Waypoint *)nextElement(&it);
+        if (lastWpt != NULL) {
+            len += getWaypointDistance(lastWpt, wpt);
+            printf("%f %f  %f %f   ->   %f\n", (float)(lastWpt->latitude), (float)(lastWpt->longitude), (float)(wpt->latitude), (float)(wpt->longitude), getWaypointDistance(lastWpt, wpt));
+        }
+        lastWpt = wpt;
+    }
+    return len;
+}
+
+float getRouteLen(const Route *rt) {
+    if (rt == NULL) {
+        return 0;
+    }
+    return getPathDistance(rt->waypoints);
+}
+
+float getTrackLen(const Track *tr) {
+    if (tr == NULL) {
+        return 0;
+    }
+
+    float len = 0;
+    TrackSegment *seg;
+    TrackSegment *lastSeg;
+    ListIterator it;
+    void *element ;
+
+    it = createIterator(tr->segments);
+    lastSeg = NULL;
+    while ((element = nextElement(&it)) != NULL) {
+        seg = (TrackSegment *)element;
+
+        len += getPathDistance(seg->waypoints);
+
+        if (lastSeg != NULL) {
+            Waypoint *lastPoint = getFromBack(lastSeg->waypoints);
+            Waypoint *firstPoint = getFromFront(seg->waypoints);
+            len += getWaypointDistance(lastPoint, firstPoint);
+        }
+
+        lastSeg = seg;
+    }
+    return len;
+}
+
+float round10(float len) {
+
+}
+
+int numRoutesWithLength(const GPXdoc *doc, float len, float delta) {
+
+}
+
+int numTracksWithLength(const GPXdoc *doc, float len, float delta) {
+
+}
+
+bool isLoopRoute(const Route *route, float delta) {
+
+}
+
+bool isLoopTrack(const Track *tr, float delta) {
+
+}
+
+List *getRoutesBetween(const GPXdoc *doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
+
+}
+
+List *getTracksBetween(const GPXdoc *doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
+
+}

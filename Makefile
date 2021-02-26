@@ -49,6 +49,6 @@ $(BIN)StructListDemo.o: $(SRC)StructListDemo.c
 
 # My test targets (temporary)
 test: $(SRC)test.c $(BIN)libgpxparser.so $(BIN)liblist.so $(INC)GPXParser.h
-	$(CC) $(CFLAGS) -I$(XML_PATH) -I$(INC) -L$(BIN) $(SRC)test.c -o $(BIN)test $(INC)GPXParser.h -llist -lgpxparser -lxml2
+	$(CC) $(CFLAGS) -I$(XML_PATH) -I$(INC) -L$(BIN) $(SRC)test.c -o $(BIN)test $(INC)GPXParser.h -llist -lgpxparser -lxml2 -lm
 
 ###################################################################################################

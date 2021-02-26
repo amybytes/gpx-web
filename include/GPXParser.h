@@ -226,7 +226,190 @@ bool validateGPXDoc(GPXdoc* doc, char* gpxSchemaFile);
 bool writeGPXdoc(GPXdoc* doc, char* fileName);
 
 
-// Module 2 and 3 functions will be added later
+//Module 2
+
+/** Function that returns the length of a Route
+ *@pre Route object exists, is not null, and has not been freed
+ *@post Route object had been freed
+ *@return length of the route in meters
+ *@param rt - a pointer to a Route struct
+**/
+float getRouteLen(const Route *rt);
+
+/** Function that returns the length of a Track
+ *@pre Track object exists, is not null, and has not been freed
+ *@post Track object had been freed
+ *@return length of the track in meters
+ *@param tr - a pointer to a Track struct
+**/
+float getTrackLen(const Track *tr);
+
+/** Function that rounds the length of a track or a route to the nearest 10m
+ *@pre Length is not negative
+  *@return length rounded to the nearest 10m
+ *@param len - length
+**/
+float round10(float len);
+
+/** Function that returns the number routes with the specified length, using the provided tolerance 
+ * to compare route lengths
+ *@pre GPXdoc object exists, is not null
+ *@post GPXdoc object exists, is not null, has not been modified
+ *@return the number of routes with the specified length
+ *@param doc - a pointer to a GPXdoc struct
+ *@param len - search route length
+ *@param delta - the tolerance used for comparing route lengths
+**/
+int numRoutesWithLength(const GPXdoc* doc, float len, float delta);
+
+
+/** Function that returns the number tracks with the specified length, using the provided tolerance 
+ * to compare track lengths
+ *@pre GPXdoc object exists, is not null
+ *@post GPXdoc object exists, is not null, has not been modified
+ *@return the number of tracks with the specified length
+ *@param doc - a pointer to a GPXdoc struct
+ *@param len - search track length
+ *@param delta - the tolerance used for comparing track lengths
+**/
+int numTracksWithLength(const GPXdoc* doc, float len, float delta);
+
+/** Function that checks if the current route is a loop
+ *@pre Route object exists, is not null
+ *@post Route object exists, is not null, has not been modified
+ *@return true if the route is a loop, false otherwise
+ *@param route - a pointer to a Route struct
+ *@param delta - the tolerance used for comparing distances between start and end points
+**/
+bool isLoopRoute(const Route* route, float delta);
+
+
+/** Function that checks if the current track is a loop
+ *@pre Track object exists, is not null
+ *@post Track object exists, is not null, has not been modified
+ *@return true if the track is a loop, false otherwise
+ *@param track - a pointer to a Track struct
+ *@param delta - the tolerance used for comparing distances between start and end points
+**/
+bool isLoopTrack(const Track *tr, float delta);
+
+
+/** Function that returns all routes between the specified start and end locations
+ *@pre GPXdoc object exists, is not null
+ *@post GPXdoc object exists, is not null, has not been modified
+ *@return a list of Route structs that connect the given sets of coordinates
+ *@param doc - a pointer to a GPXdoc struct
+ *@param sourceLat - latitude of the start location
+ *@param sourceLong - longitude of the start location
+ *@param destLat - latitude of the destination location
+ *@param destLong - longitude of the destination location
+ *@param delta - the tolerance used for comparing distances between waypoints 
+*/
+List* getRoutesBetween(const GPXdoc* doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta);
+
+/** Function that returns all Tracks between the specified start and end locations
+ *@pre GPXdoc object exists, is not null
+ *@post GPXdoc object exists, is not null, has not been modified
+ *@return a list of Track structs that connect the given sets of coordinates
+ *@param doc - a pointer to a GPXdoc struct
+ *@param sourceLat - latitude of the start location
+ *@param sourceLong - longitude of the start location
+ *@param destLat - latitude of the destination location
+ *@param destLong - longitude of the destination location
+ *@param delta - the tolerance used for comparing distances between waypoints 
+*/
+List* getTracksBetween(const GPXdoc* doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta);
+
+
+//Module 3
+
+
+/** Function to converting a Track into a JSON string
+ *@pre Track is not NULL
+ *@post Track has not been modified in any way
+ *@return A string in JSON format
+ *@param event - a pointer to a Track struct
+ **/
+char* trackToJSON(const Track *tr);
+
+/** Function to converting a Route into a JSON string
+ *@pre Route is not NULL
+ *@post Route has not been modified in any way
+ *@return A string in JSON format
+ *@param event - a pointer to a Route struct
+ **/
+char* routeToJSON(const Route *rt);
+
+/** Function to converting a list of Route structs into a JSON string
+ *@pre Route list is not NULL
+ *@post Route list has not been modified in any way
+ *@return A string in JSON format
+ *@param event - a pointer to a List struct
+ **/
+char* routeListToJSON(const List *list);
+
+/** Function to converting a list of Track structs into a JSON string
+ *@pre Track list is not NULL
+ *@post Track list has not been modified in any way
+ *@return A string in JSON format
+ *@param event - a pointer to a List struct
+ **/
+char* trackListToJSON(const List *list);
+
+/** Function to converting a GPXdoc into a JSON string
+ *@pre GPXdoc is not NULL
+ *@post GPXdoc has not been modified in any way
+ *@return A string in JSON format
+ *@param event - a pointer to a GPXdoc struct
+ **/
+char* GPXtoJSON(const GPXdoc* gpx);
+
+
+
+// ***************************** Bonus A2 functions ********************************
+
+/** Function to adding an Waypont struct to an existing Route struct
+ *@pre arguments are not NULL
+ *@post The new waypoint has been added to the Route's waypoint list
+ *@return N/A
+ *@param rt - a Route struct
+ *@param pr - a Waypoint struct
+ **/
+void addWaypoint(Route *rt, Waypoint *pt);
+
+/** Function to adding an Route struct to an existing GPXdoc struct
+ *@pre arguments are not NULL
+ *@post The new route has been added to the GPXdoc's routes list
+ *@return N/A
+ *@param doc - a GPXdoc struct
+ *@param rt - a Route struct
+ **/
+void addRoute(GPXdoc* doc, Route* rt);
+
+/** Function to converting a JSON string into an GPXdoc struct
+ *@pre JSON string is not NULL
+ *@post String has not been modified in any way
+ *@return A newly allocated and initialized GPXdoc struct
+ *@param str - a pointer to a string
+ **/
+GPXdoc* JSONtoGPX(const char* gpxString);
+
+/** Function to converting a JSON string into an Waypoint struct
+ *@pre JSON string is not NULL
+ *@post String has not been modified in any way
+ *@return A newly allocated and initialized Waypoint struct
+ *@param str - a pointer to a string
+ **/
+Waypoint* JSONtoWaypoint(const char* gpxString);
+
+/** Function to converting a JSON string into an Route struct
+ *@pre JSON string is not NULL
+ *@post String has not been modified in any way
+ *@return A newly allocated and initialized Route struct
+ *@param str - a pointer to a string
+ **/
+Route* JSONtoRoute(const char* gpxString);
+
 
 
 /* ******************************* List helper functions  - MUST be implemented *************************** */
