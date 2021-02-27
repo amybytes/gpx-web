@@ -550,3 +550,7 @@ bool compareTracksByName(const void *ptr1, const void *ptr2) {
 
     return strequals(trk1->name, trk2->name);
 }
+
+void deleteDummy(void *data) {
+    return;
+}

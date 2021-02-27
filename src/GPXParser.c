@@ -1153,6 +1153,13 @@ float getWaypointDistance(Waypoint *wpt1, Waypoint *wpt2) {
     return getDistance((float)(wpt1->latitude), (float)(wpt1->longitude), (float)(wpt2->latitude), (float)(wpt2->longitude));
 }
 
+float getWaypointPointDistance(Waypoint *wpt, float lat, float lon) {
+    if (wpt == NULL) {
+        return 0;
+    }
+    return getDistance((float)(wpt->latitude), (float)(wpt->longitude), lat, lon);
+}
+
 float getPathDistance(List *waypoints) {
     if (waypoints == NULL) {
         return 0;
@@ -1169,7 +1176,6 @@ float getPathDistance(List *waypoints) {
         wpt = (Waypoint *)nextElement(&it);
         if (lastWpt != NULL) {
             len += getWaypointDistance(lastWpt, wpt);
-            printf("%f %f  %f %f   ->   %f\n", (float)(lastWpt->latitude), (float)(lastWpt->longitude), (float)(wpt->latitude), (float)(wpt->longitude), getWaypointDistance(lastWpt, wpt));
         }
         lastWpt = wpt;
     }
@@ -1213,29 +1219,197 @@ float getTrackLen(const Track *tr) {
 }
 
 float round10(float len) {
-
+    int base = (int)(len/10)*10; // Remove ones digit and fractional part
+    float r = len - base;
+    if (r >= 5) {
+        return base+10; // Round up
+    }
+    else {
+        return base; // Round down
+    }
 }
 
 int numRoutesWithLength(const GPXdoc *doc, float len, float delta) {
+    if (doc == NULL || len < 0 || delta < 0) {
+        return 0;
+    }
 
+    if (doc->routes == NULL) {
+        return 0;
+    }
+
+    int numRoutes = 0;
+    ListIterator it;
+    Route *route;
+
+    it = createIterator(doc->routes);
+    while ((route = (Route *)nextElement(&it)) != NULL) {
+        if (fabs(getRouteLen(route) - len) < delta) {
+            numRoutes++;
+        }
+    }
+    return numRoutes;
 }
 
 int numTracksWithLength(const GPXdoc *doc, float len, float delta) {
+    if (doc == NULL || len < 0 || delta < 0) {
+        return 0;
+    }
 
+    if (doc->tracks == NULL) {
+        return 0;
+    }
+
+    int numTracks = 0;
+    ListIterator it;
+    Track *track;
+
+    it = createIterator(doc->tracks);
+    while ((track = (Track *)nextElement(&it)) != NULL) {
+        if (fabs(getTrackLen(track) - len) < delta) {
+            numTracks++;
+        }
+    }
+    return numTracks;
+}
+
+bool hasLoop(List *waypoints, float delta) {
+    if (waypoints == NULL) {
+        return false;
+    }
+
+    if (getLength(waypoints) < 4) {
+        return false;
+    }
+
+    Waypoint *firstWpt = getFromFront(waypoints);
+    Waypoint *lastWpt = getFromBack(waypoints);
+
+    return getWaypointDistance(firstWpt, lastWpt) < delta;
 }
 
 bool isLoopRoute(const Route *route, float delta) {
+    if (route == NULL || delta < 0) {
+        return false;
+    }
 
+    return hasLoop(route->waypoints, delta);
+}
+
+bool isLoopSegment(const TrackSegment *seg, float delta) {
+    if (seg == NULL || delta < 0) {
+        return false;
+    }
+
+    return hasLoop(seg->waypoints, delta);
 }
 
 bool isLoopTrack(const Track *tr, float delta) {
+    if (tr == NULL || delta < 0) {
+        return false;
+    }
 
+    if (tr->segments == NULL) {
+        return false;
+    }
+
+    ListIterator it;
+    TrackSegment *seg;
+
+    it = createIterator(tr->segments);
+    while ((seg = nextElement(&it)) != NULL) {
+        if (isLoopSegment(seg, delta)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 List *getRoutesBetween(const GPXdoc *doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
+    if (doc == NULL) {
+        return NULL;
+    }
 
+    if (doc->routes == NULL) {
+        return NULL;
+    }
+
+    List *routes;
+    ListIterator it;
+    Route *route;
+    Waypoint *startPoint;
+    Waypoint *endPoint;
+
+    routes = initializeList(routeToString, deleteDummy, compareRoutes);
+    it = createIterator(doc->routes);
+    while ((route = (Route *)nextElement(&it)) != NULL) {
+        startPoint = getFromFront(route->waypoints);
+        endPoint = getFromBack(route->waypoints);
+        if (getWaypointPointDistance(startPoint, sourceLat, sourceLong) < delta &&
+                getWaypointPointDistance(endPoint, destLat, destLong) < delta) {
+            insertBack(routes, route);
+        }
+    }
+
+    if (getLength(routes) == 0) {
+        freeList(routes);
+        return NULL;
+    }
+
+    return routes;
+}
+
+bool isTrackBetween(Track *track, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
+    if (track == NULL) {
+        return NULL;
+    }
+
+    if (track->segments == NULL) {
+        return NULL;
+    }
+
+    ListIterator it;
+    TrackSegment *seg;
+    Waypoint *startPoint;
+    Waypoint *endPoint;
+
+    it = createIterator(track->segments);
+    while ((seg = (TrackSegment *)nextElement(&it)) != NULL) {
+        startPoint = getFromFront(seg->waypoints);
+        endPoint = getFromBack(seg->waypoints);
+        if (getWaypointPointDistance(startPoint, sourceLat, sourceLong) < delta &&
+                getWaypointPointDistance(endPoint, destLat, destLong) < delta) {
+            return true;
+        }
+    }
+    return false;
 }
 
 List *getTracksBetween(const GPXdoc *doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
+    if (doc == NULL) {
+        return NULL;
+    }
 
+    if (doc->routes == NULL) {
+        return NULL;
+    }
+
+    List *tracks;
+    ListIterator it;
+    Track *track;
+
+    tracks = initializeList(trackToString, deleteDummy, compareTracks);
+    it = createIterator(doc->tracks);
+    while ((track = (Track *)nextElement(&it)) != NULL) {
+        if (isTrackBetween(track, sourceLat, sourceLong, destLat, destLong, delta)) {
+            insertBack(tracks, track);
+        }
+    }
+
+    if (getLength(tracks) == 0) {
+        freeList(tracks);
+        return NULL;
+    }
+
+    return tracks;
 }

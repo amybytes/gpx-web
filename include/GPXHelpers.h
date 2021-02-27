@@ -45,6 +45,7 @@ int getRouteStringSize(Route *route);
 int getTrackSegmentStringSize(TrackSegment *trackSegment);
 int getTrackStringSize(Track *track);
 int getListStringSize(List *list, int indentLevel);
+void deleteDummy(void *data);
 
 /* Custom list API functions */
 
