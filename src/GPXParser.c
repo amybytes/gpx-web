@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include "GPXParser.h"
 #include "GPXHelpers.h"
+#include "GPXJSON.h"
 
 #define INVALID_LATITUDE -200
 #define INVALID_LONGITUDE -200
@@ -1412,4 +1413,129 @@ List *getTracksBetween(const GPXdoc *doc, float sourceLat, float sourceLong, flo
     }
 
     return tracks;
+}
+
+JSONObject *routeToJSONObject(const Route *rt) {
+    JSONObject *json = createJSONObject();
+    
+    if (rt == NULL) {
+        return json;
+    }
+
+    char *name = rt->name;
+    int numPoints = getLength(rt->waypoints);
+    float routeLen = round10(getRouteLen(rt));
+    bool loop = isLoopRoute(rt, 10);
+
+    putStringInJSONObject(json, "name", !isEmptyString(name) ? name : "None");
+    putIntInJSONObject(json, "numPoints", numPoints);
+    putFloatInJSONObject(json, "len", routeLen);
+    putBoolInJSONObject(json, "loop", loop);
+
+    return json;
+}
+
+JSONObject *trackToJSONObject(const Track *tr) {
+    JSONObject *json = createJSONObject();
+
+    if (tr == NULL) {
+        return json;
+    }
+
+    char *name = tr->name;
+    int trackLen = round10(getTrackLen(tr));
+    bool loop = isLoopTrack(tr, 10);
+
+    putStringInJSONObject(json, "name", !isEmptyString(name) ? name : "None");
+    putFloatInJSONObject(json, "len", trackLen);
+    putBoolInJSONObject(json, "loop", loop);
+
+    return json;
+}
+
+char *routeListToJSON(const List *list) {
+    JSONArray *jsonArr = createJSONArray();
+
+    if (list == NULL) {
+        return jsonArrayToStringAndEat(jsonArr);
+    }
+
+    JSONObject *routeJson;
+    ListIterator it;
+    Route *route;
+    
+    it = createIterator((List *)list);
+    while ((route = (Route *)nextElement(&it)) != NULL) {
+        routeJson = routeToJSONObject(route);
+        addJSONObjectToJSONArray(jsonArr, routeJson);
+        deleteJSONObject(routeJson);
+    }
+    
+    return jsonArrayToStringAndEat(jsonArr);
+}
+
+char *trackListToJSON(const List *list) {
+    JSONArray *jsonArr = createJSONArray();
+
+    if (list == NULL) {
+        return jsonArrayToStringAndEat(jsonArr);
+    }
+
+    JSONObject *trackJson;
+    ListIterator it;
+    Track *track;
+    
+    it = createIterator((List *)list);
+
+    while ((track = (Track *)nextElement(&it)) != NULL) {
+        trackJson = trackToJSONObject(track);
+        addJSONObjectToJSONArray(jsonArr, trackJson);
+        deleteJSONObject(trackJson);
+    }
+
+    return jsonArrayToStringAndEat(jsonArr);
+}
+
+char *trackToJSON(const Track *tr) {
+    return jsonObjectToStringAndEat(trackToJSONObject(tr));
+}
+
+char *routeToJSON(const Route *rt) {
+    return jsonObjectToStringAndEat(routeToJSONObject(rt));
+}
+
+char *GPXtoJSON(const GPXdoc *gpx) {
+    JSONObject *json = createJSONObject();
+
+    if (gpx == NULL) {
+        return jsonObjectToStringAndEat(json);
+    }
+
+    putFloatInJSONObject(json, "ver", (float)(gpx->version));
+    putStringInJSONObject(json, "crVal", gpx->creator);
+    putIntInJSONObject(json, "numW", getLength(gpx->waypoints));
+    putIntInJSONObject(json, "numR", getLength(gpx->routes));
+    putIntInJSONObject(json, "numT", getLength(gpx->tracks));
+
+    return jsonObjectToStringAndEat(json);
+}
+
+void addWaypoint(Route *rt, Waypoint *pt) {
+
+}
+
+void addRoute(GPXdoc *doc, Route *rt) {
+
+}
+
+GPXdoc *JSONtoGPX(const char *gpxString) {
+
+}
+
+Waypoint *JSONtoWaypoint(const char *gpxString) {
+
+}
+
+Route *JSONtoRoute(const char *gpxString) {
+
 }
