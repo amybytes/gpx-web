@@ -402,7 +402,15 @@ JSONObject *parseJSONString(char *jsonStr) {
             }
             // Start of string value
             else {
-                // TODO
+                for (j = i+1; jsonStr[j] != '\"' && jsonStr[j] != '\0'; j++)
+                    ;
+                char *value = malloc(j-i);
+                strncpy(value, jsonStr+i+1, j-i-1);
+                value[j-i-1] = '\0';
+                putStringInJSONObject(json, name, value);
+                nameRead = false;
+                free(name);
+                i = j;
             }
         }
         // Start of nested JSON object
@@ -420,12 +428,10 @@ JSONObject *parseJSONString(char *jsonStr) {
             strncpy(tempStr, jsonStr+i, j-i);
             JSONObject *obj = parseJSONString(tempStr);
             free(tempStr);
-            jsonData = malloc(sizeof(JSONData));
-            jsonData->name = malloc(strlen(name)+1);
-            strcpy(jsonData->name, name);
-            jsonData->type = TYPE_JSONOBJECT;
-            jsonData->value = obj;
-            insertBack(json->data, jsonData);
+            putJSONObjectInJSONObject(json, name, obj);
+            nameRead = false;
+            free(name);
+            i = j;
         }
         // Start of JSON array
         else if (nameRead && jsonStr[i] == '[') {
@@ -435,7 +441,7 @@ JSONObject *parseJSONString(char *jsonStr) {
         else if (nameRead) {
             bool isNumeric = true;
             bool hasDecimal = false;
-            for (j = i; jsonStr[j] != '}' && jsonStr[j] != '\0'; j++) {
+            for (j = i; jsonStr[j] != '}' && jsonStr[j] != ',' && jsonStr[j] != '\0'; j++) {
                 if (jsonStr[j] == '.') {
                     hasDecimal = true;
                 }
@@ -453,20 +459,18 @@ JSONObject *parseJSONString(char *jsonStr) {
             else {
                 type = TYPE_INT;
             }
-            printf("type: %d\n", type);
-            printf("name: %s\n", name);
             jsonData = malloc(sizeof(JSONData));
             jsonData->name = malloc(strlen(name)+1);
             strcpy(jsonData->name, name);
             jsonData->type = type;
             int size = getTypeSize(NULL, type);
-            printf("size: %d\n", size);
             jsonData->value = malloc(size);
             char *data = malloc(j-i+1);
             strncpy(data, jsonStr+i, j-i);
+            data[j-i] = '\0';
+            // Convert from string to <type>
             if (type == TYPE_INT) {
                 int value = atoi(data);
-                printf("val: %d\n", value);
                 memcpy(jsonData->value, &value, size);
             }
             else if (type == TYPE_FLOAT) {
@@ -481,7 +485,10 @@ JSONObject *parseJSONString(char *jsonStr) {
                 memcpy(jsonData->value, &value, size);
             }
             insertBack(json->data, jsonData);
+            json->numElements++;
             i = j;
+            nameRead = false;
+            free(name);
         }
     }
     return json;
