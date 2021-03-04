@@ -1327,6 +1327,22 @@ bool isLoopTrack(const Track *tr, float delta) {
     return false;
 }
 
+/**
+ * Creates a list of all the routes in a GPX doc that start and end at
+ * the given source and dest locations.
+ * 
+ * Parameters:
+ *   doc -- the gpx doc containing the routes
+ *   sourceLat -- the latitude of the starting point
+ *   sourceLong -- the longitude of the starting point
+ *   destLat -- the latitude of the ending point
+ *   destLong -- the longitude of the ending point
+ *   delta -- the maximum allowable distance from the start/end point
+ * 
+ * Returns:
+ *   A list of routes that are between the starting point and the ending point,
+ *   or NULL if the doc is NULL or there are no routes between
+ **/
 List *getRoutesBetween(const GPXdoc *doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
     if (doc == NULL) {
         return NULL;
@@ -1387,6 +1403,22 @@ bool isTrackBetween(Track *track, float sourceLat, float sourceLong, float destL
     return false;
 }
 
+/**
+ * Creates a list of all the tracks in a GPX doc that start and end at
+ * the given source and dest locations.
+ * 
+ * Parameters:
+ *   doc -- the gpx doc containing the tracks
+ *   sourceLat -- the latitude of the starting point
+ *   sourceLong -- the longitude of the starting point
+ *   destLat -- the latitude of the ending point
+ *   destLong -- the longitude of the ending point
+ *   delta -- the maximum allowable distance from the start/end point
+ * 
+ * Returns:
+ *   A list of tracks that are between the starting point and the ending point,
+ *   or NULL if the doc is NULL or there are no tracks between
+ **/
 List *getTracksBetween(const GPXdoc *doc, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
     if (doc == NULL) {
         return NULL;
@@ -1416,6 +1448,11 @@ List *getTracksBetween(const GPXdoc *doc, float sourceLat, float sourceLong, flo
     return tracks;
 }
 
+/* 
+ * Internal function for converting a route to a JSONObject. This is an
+ * intermediate step for converting a route to a JSON string (conversion
+ * is handled by the GPXJSON library).
+ */
 JSONObject *routeToJSONObject(const Route *rt) {
     JSONObject *json = createJSONObject();
     
@@ -1436,6 +1473,11 @@ JSONObject *routeToJSONObject(const Route *rt) {
     return json;
 }
 
+/* 
+ * Internal function for converting a track to a JSONObject. This is an
+ * intermediate step for converting a track to a JSON string (conversion
+ * is handled by the GPXJSON library).
+ */
 JSONObject *trackToJSONObject(const Track *tr) {
     JSONObject *json = createJSONObject();
 
@@ -1454,6 +1496,16 @@ JSONObject *trackToJSONObject(const Track *tr) {
     return json;
 }
 
+/**
+ * Creates a JSON array string containing summaries of each route.
+ * 
+ * Parameters:
+ *   list -- a list of routes
+ * 
+ * Returns:
+ *   A JSON array string where each entry is a route summary (see routeToJSON()).
+ *   If the list is NULL, an empty JSON array string is returned
+ **/
 char *routeListToJSON(const List *list) {
     JSONArray *jsonArr = createJSONArray();
 
@@ -1475,6 +1527,16 @@ char *routeListToJSON(const List *list) {
     return jsonArrayToStringAndEat(jsonArr);
 }
 
+/**
+ * Creates a JSON array string containing summaries of each track.
+ * 
+ * Parameters:
+ *   list -- a list of tracks
+ * 
+ * Returns:
+ *   A JSON array string where each entry is a track summary (see trackToJSON()).
+ *   If the list is NULL, an empty JSON array string is returned
+ **/
 char *trackListToJSON(const List *list) {
     JSONArray *jsonArr = createJSONArray();
 
@@ -1497,14 +1559,46 @@ char *trackListToJSON(const List *list) {
     return jsonArrayToStringAndEat(jsonArr);
 }
 
+/**
+ * Creates a JSON string with a summary of a Track.
+ * 
+ * Parameters:
+ *   tr -- the track to convert
+ * 
+ * Returns:
+ *   A JSON string containing the track name, length, and whether the track
+ *   is a loop track. If the track is NULL, an empty JSON string is returned
+ **/
 char *trackToJSON(const Track *tr) {
     return jsonObjectToStringAndEat(trackToJSONObject(tr));
 }
 
+/**
+ * Creates a JSON string with a summary of a Route.
+ * 
+ * Parameters:
+ *   rt -- the route to convert
+ * 
+ * Returns:
+ *   A JSON string containing the route name, number of points, length,
+ *   and whether the route is a loop route. If the route is NULL, an empty
+ *   JSON string is returned
+ **/
 char *routeToJSON(const Route *rt) {
     return jsonObjectToStringAndEat(routeToJSONObject(rt));
 }
 
+/**
+ * Creates a JSON string with a summary of the GPX document.
+ * 
+ * Parameters:
+ *   gpx -- the gpx document to convert
+ * 
+ * Returns:
+ *   A JSON string containing the GPX document version, creator, number
+ *   of waypoints, number of routes, and number of tracks. If the GPX
+ *   document is NULL, an empty JSON string is returned
+ **/
 char *GPXtoJSON(const GPXdoc *gpx) {
     JSONObject *json = createJSONObject();
 
@@ -1521,6 +1615,13 @@ char *GPXtoJSON(const GPXdoc *gpx) {
     return jsonObjectToStringAndEat(json);
 }
 
+/**
+ * Adds a waypoint to the end of the GPXdoc.
+ * 
+ * Parameters:
+ *   doc -- the doc to add the route to
+ *   pt -- the waypoint to be added
+ **/
 void addWaypoint(Route *rt, Waypoint *pt) {
     if (rt == NULL || pt == NULL) {
         return;
@@ -1533,6 +1634,13 @@ void addWaypoint(Route *rt, Waypoint *pt) {
     insertBack(rt->waypoints, pt);
 }
 
+/**
+ * Adds a route to the end of the GPXdoc.
+ * 
+ * Parameters:
+ *   doc -- the doc to add the route to
+ *   rt -- the route to be added
+ **/
 void addRoute(GPXdoc *doc, Route *rt) {
     if (doc == NULL || rt == NULL) {
         return;
@@ -1545,6 +1653,18 @@ void addRoute(GPXdoc *doc, Route *rt) {
     insertBack(doc->routes, rt);
 }
 
+/**
+ * Creates a basic GPX document from a JSON string. If the supplied values are
+ * all valid and the returned GPX document is non-null, the returned GPX document
+ * will always pass validation with validateGPXDoc().
+ * 
+ * Parameters:
+ *   gpxString -- the JSON string in the format {"version": <double>, "creator", <string>}
+ * 
+ * Returns:
+ *   A pointer to a new GPXdoc structure if the JSON is valid, or NULL if the
+ *   JSON is invalid
+ **/
 GPXdoc *JSONtoGPX(const char *gpxString) {
     if (gpxString == NULL) {
         return NULL;
@@ -1583,6 +1703,16 @@ GPXdoc *JSONtoGPX(const char *gpxString) {
     return doc;
 }
 
+/**
+ * Creates a basic Waypoint structure from a JSON string.
+ * 
+ * Parameters:
+ *   gpxString -- the JSON string in the format {"lat": <double>, "lon": <double>}
+ * 
+ * Returns:
+ *   A pointer to a new Waypoint structure if the JSON is valid, or NULL
+ *   if the JSON is invalid
+ **/
 Waypoint *JSONtoWaypoint(const char *gpxString) {
     if (gpxString == NULL) {
         return NULL;
@@ -1616,6 +1746,16 @@ Waypoint *JSONtoWaypoint(const char *gpxString) {
     return waypoint;
 }
 
+/**
+ * Creates a basic Route structure from a JSON string.
+ * 
+ * Parameters:
+ *   gpxString -- the JSON string in the format {"name": <string>}
+ * 
+ * Returns:
+ *   A pointer to a new Route structure if the JSON is valid, or
+ *   NULL if the JSON is invalid
+ **/
 Route *JSONtoRoute(const char *gpxString) {
     if (gpxString == NULL) {
         return NULL;
