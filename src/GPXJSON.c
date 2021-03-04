@@ -2,11 +2,15 @@
  * Name: GPXJSON.c
  * Author: Ethan Rowan (1086586)
  * Date Created: 03/03/2021
- * Last Modified: 03/03/2021
+ * Last Modified: 03/04/2021
  * 
  * GPXJSON is a small library to simplify the creation and parsing of JSON.
- * The following data types are supported: int, float, bool, char*, JSONObject,
- * JSONArray.
+ * The following data types are supported: int, double, bool, char*, JSONObject,
+ * JSONArray. This library greatly simplifies the implementation of A2 module 3
+ * functions that convert from GPX structures to JSON and vice versa.
+ * 
+ * This library is much more powerful than what is needed for this assignment,
+ * but I was having fun writing it.
  **/
 
 #include "GPXJSON.h"
@@ -36,11 +40,11 @@ char *jsonRawToString(void *value, int type) {
         str = malloc(size);
         sprintf(str, "%d", rawData);
     }
-    else if (type == TYPE_FLOAT) {
-        float rawData = *((float *)(value));
+    else if (type == TYPE_DOUBLE) {
+        double rawData = *((double *)(value));
         size = 25;
         str = malloc(size);
-        sprintf(str, "%.1f", rawData);
+        sprintf(str, "%.1lf", rawData);
     }
     else if (type == TYPE_BOOL) {
         bool rawData = *((bool *)(value));
@@ -139,7 +143,7 @@ int compareJSONArrData(const void *first, const void *second) {
 size_t getTypeSize(void *data, int type) {
     switch (type) {
         case TYPE_INT: return sizeof(int);
-        case TYPE_FLOAT: return sizeof(float);
+        case TYPE_DOUBLE: return sizeof(double);
         case TYPE_BOOL: return sizeof(bool);
         case TYPE_STRING: return strlen((char *)data)+1;
         default: return 1;
@@ -247,8 +251,8 @@ void putIntInJSONObject(JSONObject *json, char *name, int value) {
     putJSONData(json, name, (void *)(&value), TYPE_INT);
 }
 
-void putFloatInJSONObject(JSONObject *json, char *name, float value) {
-    putJSONData(json, name, (void *)(&value), TYPE_FLOAT);
+void putDoubleInJSONObject(JSONObject *json, char *name, double value) {
+    putJSONData(json, name, (void *)(&value), TYPE_DOUBLE);
 }
 
 void putBoolInJSONObject(JSONObject *json, char *name, bool value) {
@@ -291,8 +295,8 @@ void addIntToJSONArray(JSONArray *json, int value) {
     addJSONArray(json, (void *)(&value), TYPE_INT);
 }
 
-void addFloatToJSONArray(JSONArray *json, float value) {
-    addJSONArray(json, (void *)(&value), TYPE_FLOAT);
+void addDoubleToJSONArray(JSONArray *json, double value) {
+    addJSONArray(json, (void *)(&value), TYPE_DOUBLE);
 }
 
 void addBoolToJSONArray(JSONArray *json, bool value) {
@@ -388,6 +392,9 @@ JSONObject *parseJSONString(char *jsonStr) {
     char *name = NULL;
     int j = 0;
     for (int i = 1; jsonStr[i] != '\0'; i++) {
+        // Increment past whitespace
+        for (j = i; jsonStr[j] == ' ' && jsonStr[j] != '\0'; j++, i++)
+            ;
         // Start of name or string value
         if (jsonStr[i] == '\"') {
             // Start of name
@@ -402,6 +409,7 @@ JSONObject *parseJSONString(char *jsonStr) {
             }
             // Start of string value
             else {
+                // Determine length of data
                 for (j = i+1; jsonStr[j] != '\"' && jsonStr[j] != '\0'; j++)
                     ;
                 char *value = malloc(j-i);
@@ -410,6 +418,7 @@ JSONObject *parseJSONString(char *jsonStr) {
                 putStringInJSONObject(json, name, value);
                 nameRead = false;
                 free(name);
+                free(value);
                 i = j;
             }
         }
@@ -426,26 +435,46 @@ JSONObject *parseJSONString(char *jsonStr) {
             }
             char *tempStr = malloc(j-i+1);
             strncpy(tempStr, jsonStr+i, j-i);
+            tempStr[j-i] = '\0';
             JSONObject *obj = parseJSONString(tempStr);
             free(tempStr);
             putJSONObjectInJSONObject(json, name, obj);
+            deleteJSONObject(obj);
             nameRead = false;
             free(name);
             i = j;
         }
         // Start of JSON array
         else if (nameRead && jsonStr[i] == '[') {
-            // TODO
+            int level = 1;
+            for (j = i+1; level > 0 && jsonStr[j] != '\0'; j++) {
+                if (jsonStr[j] == '[') {
+                    level++;
+                }
+                else if (jsonStr[j] == ']') {
+                    level--;
+                }
+            }
+            char *tempStr = malloc(j-i+1);
+            strncpy(tempStr, jsonStr+i, j-i);
+            tempStr[j-i] = '\0';
+            JSONArray *arr = parseJSONArrayString(tempStr);
+            free(tempStr);
+            putJSONArrayInJSONObject(json, name, arr);
+            deleteJSONArray(arr);
+            nameRead = false;
+            free(name);
+            i = j;
         }
-        // Start of value (int, float, bool)
+        // Start of value (int, double, bool)
         else if (nameRead) {
             bool isNumeric = true;
             bool hasDecimal = false;
-            for (j = i; jsonStr[j] != '}' && jsonStr[j] != ',' && jsonStr[j] != '\0'; j++) {
+            for (j = i; jsonStr[j] != '}' && jsonStr[j] != ',' && jsonStr[j] != ' ' && jsonStr[j] != '\0'; j++) {
                 if (jsonStr[j] == '.') {
                     hasDecimal = true;
                 }
-                else if (jsonStr[j] < '0' || jsonStr[j] > '9') {
+                else if ((jsonStr[j] < '0' || jsonStr[j] > '9') && jsonStr[j] != '-') {
                     isNumeric = false;
                 }
             }
@@ -454,7 +483,7 @@ JSONObject *parseJSONString(char *jsonStr) {
                 type = TYPE_BOOL;
             }
             else if (hasDecimal) {
-                type = TYPE_FLOAT;
+                type = TYPE_DOUBLE;
             }
             else {
                 type = TYPE_INT;
@@ -473,8 +502,8 @@ JSONObject *parseJSONString(char *jsonStr) {
                 int value = atoi(data);
                 memcpy(jsonData->value, &value, size);
             }
-            else if (type == TYPE_FLOAT) {
-                float value = (float)atof(data);
+            else if (type == TYPE_DOUBLE) {
+                double value = (double)atof(data);
                 memcpy(jsonData->value, &value, size);
             }
             else if (type == TYPE_BOOL) {
@@ -484,6 +513,7 @@ JSONObject *parseJSONString(char *jsonStr) {
                 }
                 memcpy(jsonData->value, &value, size);
             }
+            free(data);
             insertBack(json->data, jsonData);
             json->numElements++;
             i = j;
@@ -492,4 +522,204 @@ JSONObject *parseJSONString(char *jsonStr) {
         }
     }
     return json;
+}
+
+JSONArray *parseJSONArrayString(char *jsonStr) {
+    JSONArray *json = createJSONArray();
+    if (jsonStr[0] != '[') {
+        return NULL;
+    }
+
+    JSONArrData *jsonArrData;
+    int j = 0;
+    for (int i = 1; jsonStr[i] != '\0'; i++) {
+        // Increment past whitespace
+        for (j = i; jsonStr[j] == ' ' && jsonStr[j] != '\0'; j++, i++)
+            ;
+        if (jsonStr[i] == '\"') {
+            for (j = i+1; jsonStr[j] != '\"' && jsonStr[j] != '\0'; j++)
+                    ;
+            char *value = malloc(j-i);
+            strncpy(value, jsonStr+i+1, j-i-1);
+            value[j-i-1] = '\0';
+            addStringToJSONArray(json, value);
+            free(value);
+            i = j;
+        }
+        // Start of JSON object
+        else if (jsonStr[i] == '{') {
+            int level = 1;
+            for (j = i+1; level > 0 && jsonStr[j] != '\0'; j++) {
+                if (jsonStr[j] == '{') {
+                    level++;
+                }
+                else if (jsonStr[j] == '}') {
+                    level--;
+                }
+            }
+            char *tempStr = malloc(j-i+1);
+            strncpy(tempStr, jsonStr+i, j-i);
+            tempStr[j-i] = '\0';
+            JSONObject *obj = parseJSONString(tempStr);
+            free(tempStr);
+            addJSONObjectToJSONArray(json, obj);
+            deleteJSONObject(obj);
+            i = j;
+        }
+        // Start of nested JSON array
+        else if (jsonStr[i] == '[') {
+            int level = 1;
+            for (j = i+1; level > 0 && jsonStr[j] != '\0'; j++) {
+                if (jsonStr[j] == '[') {
+                    level++;
+                }
+                else if (jsonStr[j] == ']') {
+                    level--;
+                }
+            }
+            char *tempStr = malloc(j-i+1);
+            strncpy(tempStr, jsonStr+i, j-i);
+            tempStr[j-i] = '\0';
+            JSONArray *arr = parseJSONArrayString(tempStr);
+            free(tempStr);
+            addJSONArrayToJSONArray(json, arr);
+            deleteJSONArray(arr);
+            i = j;
+        }
+        // Start of value (int, double, bool)
+        else {
+            bool isNumeric = true;
+            bool hasDecimal = false;
+            // Determine length and type of data
+            for (j = i; jsonStr[j] != ']' && jsonStr[j] != ',' && jsonStr[j] != ' ' && jsonStr[j] != '\0'; j++) {
+                if (jsonStr[j] == '.') {
+                    hasDecimal = true;
+                }
+                else if ((jsonStr[j] < '0' || jsonStr[j] > '9') && jsonStr[j] != '-') {
+                    isNumeric = false;
+                }
+            }
+            if (j-i == 0) {
+                continue;
+            }
+            int type;
+            if (!isNumeric) {
+                type = TYPE_BOOL;
+            }
+            else if (hasDecimal) {
+                type = TYPE_DOUBLE;
+            }
+            else {
+                type = TYPE_INT;
+            }
+            jsonArrData = malloc(sizeof(JSONData));
+            jsonArrData->type = type;
+            int size = getTypeSize(NULL, type);
+            jsonArrData->value = malloc(size);
+            char *data = malloc(j-i+1);
+            strncpy(data, jsonStr+i, j-i);
+            data[j-i] = '\0';
+            // Convert from string to <type>
+            if (type == TYPE_INT) {
+                int value = atoi(data);
+                memcpy(jsonArrData->value, &value, size);
+            }
+            else if (type == TYPE_DOUBLE) {
+                double value = (double)atof(data);
+                memcpy(jsonArrData->value, &value, size);
+            }
+            else if (type == TYPE_BOOL) {
+                bool value = false;
+                if (strequals(data, "true")) {
+                    value = true;
+                }
+                memcpy(jsonArrData->value, &value, size);
+            }
+            free(data);
+            insertBack(json->data, jsonArrData);
+            json->numElements++;
+            i = j;
+        }
+    }
+    return json;
+}
+
+bool jsonObjectHas(JSONObject *json, char *name) {
+    if (json == NULL) {
+        return false;
+    }
+
+    ListIterator it = createIterator(json->data);
+    JSONData *jsonData;
+    while ((jsonData = (JSONData *)nextElement(&it)) != NULL) {
+        if (strequals(jsonData->name, name)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void *getDataFromJSONObject(JSONObject *json, char *name) {
+    if (json == NULL) {
+        return false;
+    }
+
+    ListIterator it = createIterator(json->data);
+    JSONData *jsonData;
+    while ((jsonData = (JSONData *)nextElement(&it)) != NULL) {
+        if (strequals(jsonData->name, name)) {
+            return jsonData->value;
+        }
+    }
+
+    return false;
+}
+
+int getIntFromJSONObject(JSONObject *json, char *name) {
+    void *data = getDataFromJSONObject(json, name);
+    if (data == NULL) {
+        return 0;
+    }
+    return *((int *)data);
+}
+
+double getDoubleFromJSONObject(JSONObject *json, char *name) {
+    void *data = getDataFromJSONObject(json, name);
+    if (data == NULL) {
+        return 0;
+    }
+    return *((double *)data);
+}
+
+bool getBoolFromJSONObject(JSONObject *json, char *name) {
+    void *data = getDataFromJSONObject(json, name);
+    if (data == NULL) {
+        return false;
+    }
+    return *((bool *)data);
+}
+
+char *getStringFromJSONObject(JSONObject *json, char *name) {
+    void *data = getDataFromJSONObject(json, name);
+    if (data == NULL) {
+        return NULL;
+    }
+    return (char *)data;
+}
+
+JSONObject *getJSONObjectFromJSONObject(JSONObject *json, char *name) {
+    void *data = getDataFromJSONObject(json, name);
+    if (data == NULL) {
+        return NULL;
+    }
+    return (JSONObject *)data;
+}
+
+JSONArray *getJSONArrayFromJSONObject(JSONObject *json, char *name) {
+    void *data = getJSONArrayFromJSONObject(json, name);
+    if (data == NULL) {
+        return NULL;
+    }
+    return (JSONArray *)data;
 }

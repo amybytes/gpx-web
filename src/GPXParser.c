@@ -12,6 +12,7 @@
 
 #define INVALID_LATITUDE -200
 #define INVALID_LONGITUDE -200
+#define DEFAULT_NAMESPACE "http://www.topografix.com/GPX/1/1"
 
 xmlNode *createXMLGPXData(GPXData *gpxData, xmlNode *parent) {
     if (gpxData == NULL) {
@@ -1429,7 +1430,7 @@ JSONObject *routeToJSONObject(const Route *rt) {
 
     putStringInJSONObject(json, "name", !isEmptyString(name) ? name : "None");
     putIntInJSONObject(json, "numPoints", numPoints);
-    putFloatInJSONObject(json, "len", routeLen);
+    putDoubleInJSONObject(json, "len", (double)routeLen);
     putBoolInJSONObject(json, "loop", loop);
 
     return json;
@@ -1447,7 +1448,7 @@ JSONObject *trackToJSONObject(const Track *tr) {
     bool loop = isLoopTrack(tr, 10);
 
     putStringInJSONObject(json, "name", !isEmptyString(name) ? name : "None");
-    putFloatInJSONObject(json, "len", trackLen);
+    putDoubleInJSONObject(json, "len", (float)trackLen);
     putBoolInJSONObject(json, "loop", loop);
 
     return json;
@@ -1511,7 +1512,7 @@ char *GPXtoJSON(const GPXdoc *gpx) {
         return jsonObjectToStringAndEat(json);
     }
 
-    putFloatInJSONObject(json, "ver", (float)(gpx->version));
+    putDoubleInJSONObject(json, "ver", gpx->version);
     putStringInJSONObject(json, "crVal", gpx->creator);
     putIntInJSONObject(json, "numW", getLength(gpx->waypoints));
     putIntInJSONObject(json, "numR", getLength(gpx->routes));
@@ -1521,21 +1522,125 @@ char *GPXtoJSON(const GPXdoc *gpx) {
 }
 
 void addWaypoint(Route *rt, Waypoint *pt) {
+    if (rt == NULL || pt == NULL) {
+        return;
+    }
 
+    if (rt->waypoints == NULL) {
+        return;
+    }
+
+    insertBack(rt->waypoints, pt);
 }
 
 void addRoute(GPXdoc *doc, Route *rt) {
+    if (doc == NULL || rt == NULL) {
+        return;
+    }
 
+    if (doc->routes == NULL) {
+        return;
+    }
+
+    insertBack(doc->routes, rt);
 }
 
 GPXdoc *JSONtoGPX(const char *gpxString) {
+    if (gpxString == NULL) {
+        return NULL;
+    }
 
+    JSONObject *json = parseJSONString((char *)gpxString);
+    GPXdoc *doc = malloc(sizeof(GPXdoc));
+    doc->version = -1;
+    doc->creator = NULL;
+    strcpy(doc->namespace, DEFAULT_NAMESPACE);
+    doc->waypoints = initializeList(waypointToString, deleteWaypoint, compareWaypoints);
+    doc->routes = initializeList(routeToString, deleteRoute, compareRoutes);
+    doc->tracks = initializeList(trackToString, deleteTrack, compareTracks);
+
+    if (jsonObjectHas(json, "version")) {
+        doc->version = getDoubleFromJSONObject(json, "version");
+    }
+    if (jsonObjectHas(json, "creator")) {
+        char *creator = getStringFromJSONObject(json, "creator");
+        if (creator != NULL) {
+            doc->creator = malloc(strlen(creator)+1);
+            strcpy(doc->creator, creator);
+        }
+    }
+    
+    deleteJSONObject(json);
+    
+    if (doc->version == -1 || doc->creator == NULL) {
+        if (doc->creator != NULL) {
+            free(doc->creator);
+        }
+        free(doc);
+        return NULL;
+    }
+
+    return doc;
 }
 
 Waypoint *JSONtoWaypoint(const char *gpxString) {
+    if (gpxString == NULL) {
+        return NULL;
+    }
 
+    JSONObject *json = parseJSONString((char *)gpxString);
+    Waypoint *waypoint = malloc(sizeof(Waypoint));
+    waypoint->name = malloc(2);
+    waypoint->name[0] = '\0';
+    waypoint->latitude = INVALID_LATITUDE;
+    waypoint->longitude = INVALID_LONGITUDE;
+    waypoint->otherData = initializeList(gpxDataToString, deleteGpxData, compareGpxData);
+
+    // Get waypoint attributes from JSON
+    if (jsonObjectHas(json, "lat")) {
+        waypoint->latitude = getDoubleFromJSONObject(json, "lat");
+    }
+    if (jsonObjectHas(json, "lon")) {
+        waypoint->longitude = getDoubleFromJSONObject(json, "lon");
+    }
+    
+    deleteJSONObject(json);
+    
+    // Waypoint creation fails if attributes are not set in JSON
+    if (waypoint->latitude == INVALID_LATITUDE ||
+            waypoint->longitude == INVALID_LONGITUDE) {
+        deleteWaypoint(waypoint);
+        return NULL;
+    }
+
+    return waypoint;
 }
 
 Route *JSONtoRoute(const char *gpxString) {
+    if (gpxString == NULL) {
+        return NULL;
+    }
 
+    JSONObject *json = parseJSONString((char *)gpxString);
+    Route *route = malloc(sizeof(Route));
+    route->name = NULL;
+    route->waypoints = initializeList(waypointToString, deleteWaypoint, compareWaypoints);
+    route->otherData = initializeList(gpxDataToString, deleteGpxData, compareGpxData);
+
+    if (jsonObjectHas(json, "name")) {
+        char *name = getStringFromJSONObject(json, "name");
+        if (name != NULL) {
+            route->name = malloc(strlen(name)+1);
+            strcpy(route->name, name);
+        }
+    }
+    
+    deleteJSONObject(json);
+    
+    if (route->name == NULL) {
+        deleteRoute(route);
+        return NULL;
+    }
+
+    return route;
 }
