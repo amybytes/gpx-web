@@ -13,6 +13,8 @@
 
 #define JSON_BUFF_SIZE 512
 
+#define strequals(a, b) (!strcmp(a, b))
+
 int intLen(int n) {
     if (n == 0) {
         return 1;
@@ -373,4 +375,114 @@ char *jsonArrayToStringAndEat(JSONArray *json) {
     char *jsonStr = jsonArrayToString(json);
     deleteJSONArray(json);
     return jsonStr;
+}
+
+JSONObject *parseJSONString(char *jsonStr) {
+    JSONObject *json = createJSONObject();
+    if (jsonStr[0] != '{') {
+        return NULL;
+    }
+
+    JSONData *jsonData;
+    bool nameRead = false;
+    char *name = NULL;
+    int j = 0;
+    for (int i = 1; jsonStr[i] != '\0'; i++) {
+        // Start of name or string value
+        if (jsonStr[i] == '\"') {
+            // Start of name
+            if (!nameRead) {
+                for (j = i+1; jsonStr[j] != '\"' && jsonStr[j] != '\0'; j++)
+                    ;
+                name = malloc(j-i);
+                strncpy(name, jsonStr+i+1, j-i-1); // set the name
+                name[j-i-1] = '\0';
+                nameRead = true;
+                i = j+1; // increment past the quote and colon ("name":...)
+            }
+            // Start of string value
+            else {
+                // TODO
+            }
+        }
+        // Start of nested JSON object
+        else if (jsonStr[i] == '{') {
+            int level = 1;
+            for (j = i+1; level > 0 && jsonStr[j] != '\0'; j++) {
+                if (jsonStr[j] == '{') {
+                    level++;
+                }
+                else if (jsonStr[j] == '}') {
+                    level--;
+                }
+            }
+            char *tempStr = malloc(j-i+1);
+            strncpy(tempStr, jsonStr+i, j-i);
+            JSONObject *obj = parseJSONString(tempStr);
+            free(tempStr);
+            jsonData = malloc(sizeof(JSONData));
+            jsonData->name = malloc(strlen(name)+1);
+            strcpy(jsonData->name, name);
+            jsonData->type = TYPE_JSONOBJECT;
+            jsonData->value = obj;
+            insertBack(json->data, jsonData);
+        }
+        // Start of JSON array
+        else if (nameRead && jsonStr[i] == '[') {
+            // TODO
+        }
+        // Start of value (int, float, bool)
+        else if (nameRead) {
+            bool isNumeric = true;
+            bool hasDecimal = false;
+            for (j = i; jsonStr[j] != '}' && jsonStr[j] != '\0'; j++) {
+                if (jsonStr[j] == '.') {
+                    hasDecimal = true;
+                }
+                else if (jsonStr[j] < '0' || jsonStr[j] > '9') {
+                    isNumeric = false;
+                }
+            }
+            int type;
+            if (!isNumeric) {
+                type = TYPE_BOOL;
+            }
+            else if (hasDecimal) {
+                type = TYPE_FLOAT;
+            }
+            else {
+                type = TYPE_INT;
+            }
+            printf("type: %d\n", type);
+            printf("name: %s\n", name);
+            jsonData = malloc(sizeof(JSONData));
+            jsonData->name = malloc(strlen(name)+1);
+            strcpy(jsonData->name, name);
+            jsonData->type = type;
+            int size = getTypeSize(NULL, type);
+            printf("size: %d\n", size);
+            jsonData->value = malloc(size);
+            char *data = malloc(j-i+1);
+            strncpy(data, jsonStr+i, j-i);
+            if (type == TYPE_INT) {
+                int value = atoi(data);
+                printf("val: %d\n", value);
+                memcpy(jsonData->value, &value, size);
+            }
+            else if (type == TYPE_FLOAT) {
+                float value = (float)atof(data);
+                memcpy(jsonData->value, &value, size);
+            }
+            else if (type == TYPE_BOOL) {
+                bool value = false;
+                if (strequals(data, "true")) {
+                    value = true;
+                }
+                memcpy(jsonData->value, &value, size);
+            }
+            insertBack(json->data, jsonData);
+            i = j;
+        }
+    }
+    return json;
 }
