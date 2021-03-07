@@ -10,6 +10,7 @@
 
 #include "LinkedListAPI.h"
 
+/* Raw data types supported by GPXJSON */
 #define TYPE_INT 0
 #define TYPE_DOUBLE 1
 #define TYPE_BOOL 2
@@ -17,26 +18,55 @@
 #define TYPE_JSONOBJECT 4
 #define TYPE_JSONARRAY 5
 
+/**
+ * JSONData is a wrapper for raw data types (int, double,
+ * bool, string, JSONObject, JSONArray) that contains extra
+ * metadata for handling specific types in JSON objects.
+ **/
 typedef struct jsondata {
+    // The name/key for the data
     char *name;
+    // The data itself
     void *value;
+    // The type of the data. Must be one of: TYPE_INT, TYPE_DOUBLE,
+    // TYPE_BOOL, TYPE_STRING, TYPE_JSONOBJECT, TYPE_JSONARRAY
     int type;
 } JSONData;
 
+/**
+ * JSONArrData is a wrapper for raw data types (int, double,
+ * bool, string, JSONObject, JSONArray), that contains extra
+ * metadata for handling specific types in JSON arrays.
+ **/
 typedef struct jsonarrdata {
+    // The data itself
     void *value;
+    // The type of the data. Must be one of: TYPE_INT, TYPE_DOUBLE,
+    // TYPE_BOOL, TYPE_STRING, TYPE_JSONOBJECT, TYPE_JSONARRAY
     int type;
 } JSONArrData;
 
+/**
+ * A JSONObject represents a JSON object as a
+ * collection of JSON data.
+ **/
 typedef struct jsonobject {
+    // Data must be stored in a JSONData wrapper
     List *data;
     int numElements;
 } JSONObject;
 
+/**
+ * A JSONArray represents a JSON array as a collection of
+ * JSON array data.
+ **/
 typedef struct jsonarray {
+    // Data must be stored in a JSONArrData wrapper
     List *data;
     int numElements;
 } JSONArray;
+
+/* JSON object functions */
 
 JSONObject *createJSONObject();
 char *jsonObjectToString(JSONObject *json);
@@ -57,6 +87,8 @@ bool getBoolFromJSONObject(JSONObject *json, char *name);
 char *getStringFromJSONObject(JSONObject *json, char *name);
 JSONObject *getJSONObjectFromJSONObject(JSONObject *json, char *name);
 JSONArray *getJSONArrayFromJSONObject(JSONObject *json, char *name);
+
+/* JSON array functions */
 
 JSONArray *createJSONArray();
 char *jsonArrayToString(JSONArray *json);

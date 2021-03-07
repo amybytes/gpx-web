@@ -1294,7 +1294,6 @@ bool isLoopRoute(const Route *route, float delta) {
     if (route == NULL || delta < 0) {
         return false;
     }
-
     return hasLoop(route->waypoints, delta);
 }
 
@@ -1302,7 +1301,6 @@ bool isLoopSegment(const TrackSegment *seg, float delta) {
     if (seg == NULL || delta < 0) {
         return false;
     }
-
     return hasLoop(seg->waypoints, delta);
 }
 
@@ -1315,16 +1313,21 @@ bool isLoopTrack(const Track *tr, float delta) {
         return false;
     }
 
-    ListIterator it;
-    TrackSegment *seg;
+    TrackSegment *firstSegment = getFromFront(tr->segments);
+    TrackSegment *lastSegment = getFromBack(tr->segments);
 
-    it = createIterator(tr->segments);
-    while ((seg = nextElement(&it)) != NULL) {
-        if (isLoopSegment(seg, delta)) {
-            return true;
-        }
+    if (firstSegment == NULL || lastSegment == NULL) {
+        return false;
     }
-    return false;
+
+    Waypoint *firstPoint = getFromFront(firstSegment->waypoints);
+    Waypoint *lastPoint = getFromBack(lastSegment->waypoints);
+
+    if (firstPoint == NULL || lastPoint == NULL) {
+        return false;
+    }
+
+    return getWaypointDistance(firstPoint, lastPoint) < delta;
 }
 
 /**
@@ -1617,10 +1620,10 @@ char *GPXtoJSON(const GPXdoc *gpx) {
 }
 
 /**
- * Adds a waypoint to the end of the GPXdoc.
+ * Adds a waypoint to the end of a route.
  * 
  * Parameters:
- *   doc -- the doc to add the route to
+ *   rt -- the route to add the waypoint to
  *   pt -- the waypoint to be added
  **/
 void addWaypoint(Route *rt, Waypoint *pt) {

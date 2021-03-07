@@ -4,10 +4,12 @@
  * Date Created: 03/03/2021
  * Last Modified: 03/04/2021
  * 
- * GPXJSON is a small library to simplify the creation and parsing of JSON.
+ * GPXJSON is a small JSON library to simplify the creation and parsing of JSON.
  * The following data types are supported: int, double, bool, char*, JSONObject,
  * JSONArray. This library greatly simplifies the implementation of A2 module 3
  * functions that convert from GPX structures to JSON and vice versa.
+ * 
+ * Both JSON object/array creation and parsing supports nested JSON objects/arrays.
  * 
  * This library is much more powerful than what is needed for this assignment,
  * but I was having fun writing it.
