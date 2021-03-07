@@ -11,6 +11,7 @@
 #include "LinkedListAPI.h"
 
 /* Raw data types supported by GPXJSON */
+#define TYPE_UNKNOWN -1
 #define TYPE_INT 0
 #define TYPE_DOUBLE 1
 #define TYPE_BOOL 2
@@ -81,6 +82,7 @@ void putStringInJSONObject(JSONObject *json, char *name, char *value);
 void putJSONObjectInJSONObject(JSONObject *json, char *name, JSONObject *value);
 void putJSONArrayInJSONObject(JSONObject *json, char *name, JSONArray *value);
 bool jsonObjectHas(JSONObject *json, char *name);
+int getJSONObjectElementType(JSONObject *json, char *name);
 int getIntFromJSONObject(JSONObject *json, char *name);
 double getDoubleFromJSONObject(JSONObject *json, char *name);
 bool getBoolFromJSONObject(JSONObject *json, char *name);

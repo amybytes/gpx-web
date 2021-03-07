@@ -662,6 +662,26 @@ bool jsonObjectHas(JSONObject *json, char *name) {
     return false;
 }
 
+/**
+ * Gets the type of the data by its name. This is really only needed when
+ * it is ambiguous
+ **/
+int getJSONObjectElementType(JSONObject *json, char *name) {
+    if (json == NULL) {
+        return TYPE_UNKNOWN;
+    }
+
+    ListIterator it = createIterator(json->data);
+    JSONData *jsonData;
+    while ((jsonData = (JSONData *)nextElement(&it)) != NULL) {
+        if (strequals(jsonData->name, name)) {
+            return jsonData->type;
+        }
+    }
+
+    return TYPE_UNKNOWN;
+}
+
 void *getDataFromJSONObject(JSONObject *json, char *name) {
     if (json == NULL) {
         return false;
@@ -691,7 +711,21 @@ double getDoubleFromJSONObject(JSONObject *json, char *name) {
     if (data == NULL) {
         return 0;
     }
-    return *((double *)data);
+    int dataType = getJSONObjectElementType(json, name);
+    /* The correct getter must be used here, since the integer and floating point
+       binary representations are different. If the data does not have a decimal (.)
+       in its string form, when it is parsed it will be represented internally as
+       an integer. If the caller of this function is expecting a double, this will
+       likely lead to memory errors. */
+    if (dataType == TYPE_DOUBLE) {
+        return *((double *)data);
+    }
+    else if (dataType == TYPE_INT) {
+        return (double)getIntFromJSONObject(json, name);
+    }
+    else {
+        return 0;
+    }
 }
 
 bool getBoolFromJSONObject(JSONObject *json, char *name) {
