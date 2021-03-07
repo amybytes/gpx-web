@@ -1379,28 +1379,29 @@ List *getRoutesBetween(const GPXdoc *doc, float sourceLat, float sourceLong, flo
 
 bool isTrackBetween(Track *track, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
     if (track == NULL) {
-        return NULL;
+        return false;
     }
 
     if (track->segments == NULL) {
-        return NULL;
+        return false;
     }
 
-    ListIterator it;
-    TrackSegment *seg;
-    Waypoint *startPoint;
-    Waypoint *endPoint;
+    TrackSegment *firstSeg = getFromFront(track->segments);
+    TrackSegment *lastSeg = getFromBack(track->segments);
 
-    it = createIterator(track->segments);
-    while ((seg = (TrackSegment *)nextElement(&it)) != NULL) {
-        startPoint = getFromFront(seg->waypoints);
-        endPoint = getFromBack(seg->waypoints);
-        if (getWaypointPointDistance(startPoint, sourceLat, sourceLong) < delta &&
-                getWaypointPointDistance(endPoint, destLat, destLong) < delta) {
-            return true;
-        }
+    if (firstSeg == NULL || lastSeg == NULL) {
+        return false;
     }
-    return false;
+
+    Waypoint *firstPoint = getFromFront(firstSeg->waypoints);
+    Waypoint *lastPoint = getFromBack(lastSeg->waypoints);
+
+    if (firstPoint == NULL || lastPoint == NULL) {
+        return false;
+    }
+    
+    return (getWaypointPointDistance(firstPoint, sourceLat, sourceLong) < delta &&
+                getWaypointPointDistance(lastPoint, destLat, destLong) < delta);
 }
 
 /**
@@ -1424,7 +1425,7 @@ List *getTracksBetween(const GPXdoc *doc, float sourceLat, float sourceLong, flo
         return NULL;
     }
 
-    if (doc->routes == NULL) {
+    if (doc->tracks == NULL) {
         return NULL;
     }
 
