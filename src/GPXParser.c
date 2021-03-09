@@ -634,6 +634,10 @@ GPXdoc *createGPXdoc(char *fileName) {
     if (fileName == NULL) {
         return NULL;
     }
+
+    if (!fileExtensionsEqual(fileName, ".gpx")) {
+        return NULL;
+    }
     
     xml = xmlReadFile(fileName, NULL, 0);
     if (xml == NULL) {
@@ -784,6 +788,14 @@ bool validateGPXDoc(GPXdoc *doc, char *fileName) {
     xmlSchema *schema;
     xmlSchemaParserCtxt *parserCtxt;
     xmlSchemaValidCtxt *validCtxt;
+
+    if (doc == NULL || fileName == NULL) {
+        return false;
+    }
+
+    if (!fileExtensionsEqual(fileName, ".xsd")) {
+        return false;
+    }
 
     parserCtxt = xmlSchemaNewParserCtxt(fileName);
     schema = xmlSchemaParse(parserCtxt);
@@ -1246,7 +1258,7 @@ int numRoutesWithLength(const GPXdoc *doc, float len, float delta) {
 
     it = createIterator(doc->routes);
     while ((route = (Route *)nextElement(&it)) != NULL) {
-        if (fabs(getRouteLen(route) - len) < delta) {
+        if (fabs(getRouteLen(route) - len) <= delta) {
             numRoutes++;
         }
     }
@@ -1268,7 +1280,7 @@ int numTracksWithLength(const GPXdoc *doc, float len, float delta) {
 
     it = createIterator(doc->tracks);
     while ((track = (Track *)nextElement(&it)) != NULL) {
-        if (fabs(getTrackLen(track) - len) < delta) {
+        if (fabs(getTrackLen(track) - len) <= delta) {
             numTracks++;
         }
     }
@@ -1287,7 +1299,7 @@ bool hasLoop(List *waypoints, float delta) {
     Waypoint *firstWpt = getFromFront(waypoints);
     Waypoint *lastWpt = getFromBack(waypoints);
 
-    return getWaypointDistance(firstWpt, lastWpt) < delta;
+    return getWaypointDistance(firstWpt, lastWpt) <= delta;
 }
 
 bool isLoopRoute(const Route *route, float delta) {
@@ -1327,7 +1339,7 @@ bool isLoopTrack(const Track *tr, float delta) {
         return false;
     }
 
-    return getWaypointDistance(firstPoint, lastPoint) < delta;
+    return getWaypointDistance(firstPoint, lastPoint) <= delta;
 }
 
 /**
@@ -1366,8 +1378,8 @@ List *getRoutesBetween(const GPXdoc *doc, float sourceLat, float sourceLong, flo
     while ((route = (Route *)nextElement(&it)) != NULL) {
         startPoint = getFromFront(route->waypoints);
         endPoint = getFromBack(route->waypoints);
-        if (getWaypointPointDistance(startPoint, sourceLat, sourceLong) < delta &&
-                getWaypointPointDistance(endPoint, destLat, destLong) < delta) {
+        if (getWaypointPointDistance(startPoint, sourceLat, sourceLong) <= delta &&
+                getWaypointPointDistance(endPoint, destLat, destLong) <= delta) {
             insertBack(routes, route);
         }
     }
@@ -1403,8 +1415,8 @@ bool isTrackBetween(Track *track, float sourceLat, float sourceLong, float destL
         return false;
     }
     
-    return (getWaypointPointDistance(firstPoint, sourceLat, sourceLong) < delta &&
-                getWaypointPointDistance(lastPoint, destLat, destLong) < delta);
+    return (getWaypointPointDistance(firstPoint, sourceLat, sourceLong) <= delta &&
+                getWaypointPointDistance(lastPoint, destLat, destLong) <= delta);
 }
 
 /**

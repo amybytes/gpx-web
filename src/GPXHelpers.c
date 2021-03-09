@@ -554,3 +554,14 @@ bool compareTracksByName(const void *ptr1, const void *ptr2) {
 void deleteDummy(void *data) {
     return;
 }
+
+bool fileExtensionsEqual(char *filename, char *extension) {
+    int extLen = strlen(extension);
+    if (strlen(filename) < extLen) {
+        return false; // filename is too short to have the extension 
+    }
+    if (!strequals(filename+strlen(filename)-extLen, extension)) {
+        return false; // filename does not have the extension
+    }
+    return true;
+}

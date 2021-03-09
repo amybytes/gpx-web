@@ -46,6 +46,7 @@ int getTrackSegmentStringSize(TrackSegment *trackSegment);
 int getTrackStringSize(Track *track);
 int getListStringSize(List *list, int indentLevel);
 void deleteDummy(void *data);
+bool fileExtensionsEqual(char *filename, char *extension);
 
 /* Custom list API functions */
 
