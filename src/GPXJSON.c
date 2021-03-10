@@ -33,6 +33,10 @@ int intLen(int n) {
     return len;
 }
 
+/**
+ * Converts a raw value (int, double, bool, string, JSONObject, JSONArray)
+ * into its most basic string representation.
+ **/
 char *jsonRawToString(void *value, int type) {
     char *str = NULL;
     int size = 0;
@@ -178,6 +182,7 @@ JSONObject *cloneJSONObject(JSONObject *json) {
         strcpy(innerData->name, jsonData->name);
         innerData->type = jsonData->type;
         if (jsonData->type == TYPE_JSONOBJECT) {
+            // Recursively clone the inner JSON object
             innerData->value = cloneJSONObject((JSONObject *)(jsonData->value));
         }
         else if (jsonData->type == TYPE_JSONARRAY) {
@@ -206,6 +211,7 @@ JSONArray *cloneJSONArray(JSONArray *json) {
             innerData->value = cloneJSONObject((JSONObject *)(jsonArrData->value));
         }
         else if (jsonArrData->type == TYPE_JSONARRAY) {
+            // Recursively clone the inner JSON array
             innerData->value = cloneJSONArray((JSONArray *)(jsonArrData->value));
         }
         else {
@@ -383,6 +389,14 @@ char *jsonArrayToStringAndEat(JSONArray *json) {
     return jsonStr;
 }
 
+/**
+ * Parses a JSON object string and creates a JSONObject representation.
+ * 
+ * NOTE: This function assumes that the JSON string is ALREADY valid.
+ *       If the JSON string is not valid, a segmentation fault will
+ *       likely occur.
+ * TODO: Add a JSON validation function.
+ **/
 JSONObject *parseJSONString(char *jsonStr) {
     JSONObject *json = createJSONObject();
     if (jsonStr[0] != '{') {
@@ -526,6 +540,14 @@ JSONObject *parseJSONString(char *jsonStr) {
     return json;
 }
 
+/**
+ * Parses a JSON array string and creates a JSONArray representation.
+ * 
+ * NOTE: This function assumes that the JSON string is ALREADY valid.
+ *       If the JSON string is not valid, a segmentation fault will
+ *       likely occur.
+ * TODO: Add a JSON validation function.
+ **/
 JSONArray *parseJSONArrayString(char *jsonStr) {
     JSONArray *json = createJSONArray();
     if (jsonStr[0] != '[') {
