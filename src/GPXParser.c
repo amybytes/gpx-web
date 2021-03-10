@@ -1622,11 +1622,11 @@ char *GPXtoJSON(const GPXdoc *gpx) {
         return jsonObjectToStringAndEat(json);
     }
 
-    putDoubleInJSONObject(json, "ver", gpx->version);
-    putStringInJSONObject(json, "crVal", gpx->creator);
-    putIntInJSONObject(json, "numW", getLength(gpx->waypoints));
-    putIntInJSONObject(json, "numR", getLength(gpx->routes));
-    putIntInJSONObject(json, "numT", getLength(gpx->tracks));
+    putDoubleInJSONObject(json, "version", gpx->version);
+    putStringInJSONObject(json, "creator", gpx->creator);
+    putIntInJSONObject(json, "numWaypoints", getLength(gpx->waypoints));
+    putIntInJSONObject(json, "numRoutes", getLength(gpx->routes));
+    putIntInJSONObject(json, "numTracks", getLength(gpx->tracks));
 
     return jsonObjectToStringAndEat(json);
 }
