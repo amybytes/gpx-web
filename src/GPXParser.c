@@ -14,6 +14,10 @@
 #define INVALID_LONGITUDE -200
 #define DEFAULT_NAMESPACE "http://www.topografix.com/GPX/1/1"
 
+/**
+ * Creates an XML node representation of a GPXData structure.
+ * This is used to construct a complete GPXdoc XML tree.
+ **/
 xmlNode *createXMLGPXData(GPXData *gpxData, xmlNode *parent) {
     if (gpxData == NULL) {
         return NULL;
@@ -21,6 +25,10 @@ xmlNode *createXMLGPXData(GPXData *gpxData, xmlNode *parent) {
     return xmlNewChild(parent, NULL, BAD_CAST gpxData->name, BAD_CAST gpxData->value); 
 }
 
+/**
+ * Creates an XML node representation of a Waypoint structure.
+ * This is used to construct a complete GPXdoc XML tree.
+ **/
 xmlNode *createXMLWaypoint(Waypoint *waypoint, xmlNode *parent, char *name) {
     xmlNode *wpt = NULL;
     char *latitude;
@@ -64,6 +72,10 @@ xmlNode *createXMLWaypoint(Waypoint *waypoint, xmlNode *parent, char *name) {
     return wpt;
 }
 
+/**
+ * Creates an XML node representation of a Route structure.
+ * This is used to construct a complete GPXdoc XML tree.
+ **/
 xmlNode *createXMLRoute(Route *route, xmlNode *parent) {
     xmlNode *rte = NULL;
     ListIterator it;
@@ -102,6 +114,10 @@ xmlNode *createXMLRoute(Route *route, xmlNode *parent) {
     return rte;
 }
 
+/**
+ * Creates an XML node representation of a TrackSegment structure.
+ * This is used to construct a complete GPXdoc XML tree.
+ **/
 xmlNode *createXMLTrackSegment(TrackSegment *trackSegment, xmlNode *parent) {
     xmlNode *trkSeg = NULL;
     ListIterator it;
@@ -128,6 +144,10 @@ xmlNode *createXMLTrackSegment(TrackSegment *trackSegment, xmlNode *parent) {
     return trkSeg;
 }
 
+/**
+ * Creates an XML node representation of a Track structure.
+ * This is used to construct a complete GPXdoc XML tree.
+ **/
 xmlNode *createXMLTrack(Track *track, xmlNode *parent) {
     xmlNode *trk = NULL;
     ListIterator it;
@@ -166,6 +186,11 @@ xmlNode *createXMLTrack(Track *track, xmlNode *parent) {
     return trk;
 }
 
+/**
+ * Creates an XML document representation of a GPXdoc structure.
+ * This XML tree can be used to validate a GPX document using
+ * validateGPXDoc(), or to write it to a file using writeGPXdoc().
+ **/
 xmlDoc *createXMLdoc(GPXdoc *gpxDoc) {
     xmlDoc *xml = NULL;
     xmlNode *root = NULL;
@@ -774,6 +799,15 @@ void deleteGPXdoc(GPXdoc *doc) {
     free(doc);
 }
 
+/**
+ * Creates a new *valid* GPX document from a gpx file.
+ * 
+ * Parameters:
+ *   fileName -- the name of the gpx file
+ * 
+ * Returns:
+ *   A pointer to a new GPXdoc structure, or NULL if a parsing error occurs
+ **/
 GPXdoc *createValidGPXdoc(char *fileName, char *gpxSchemaFile) {
     GPXdoc *doc = createGPXdoc(fileName);
     if (validateGPXDoc(doc, gpxSchemaFile)) {
@@ -783,6 +817,13 @@ GPXdoc *createValidGPXdoc(char *fileName, char *gpxSchemaFile) {
     return NULL;
 }
 
+/**
+ * Validates a GPX doc against an XML schema file.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to validate
+ *   fileName -- the name of the schema file; must end in ".xsd"
+ **/
 bool validateGPXDoc(GPXdoc *doc, char *fileName) {
     xmlDoc *xml;
     xmlSchema *schema;
@@ -821,6 +862,17 @@ bool validateGPXDoc(GPXdoc *doc, char *fileName) {
     return status == 0;
 }
 
+/**
+ * Writes a GPX document to a file on the disk.
+ * 
+ * Parameters:
+ *   doc -- the GPX document to write
+ *   fileName -- the name of the file to write to
+ * 
+ * Returns:
+ *   true if the write is successful, or false if the GPX document
+ *   is invalid or the write is unsuccessful
+ **/
 bool writeGPXdoc(GPXdoc *doc, char *fileName) {
     xmlDoc *xml = createXMLdoc(doc);
     if (xml == NULL) {
@@ -1160,6 +1212,16 @@ float getDistance(float sourceLat, float sourceLon, float destLat, float destLon
     return R*c;
 }
 
+/**
+ * Gets the distance between two waypoints.
+ * 
+ * Parameters:
+ *   wpt1 -- the first waypoint
+ *   wpt2 -- the second waypoint
+ * 
+ * Returns:
+ *   The distance, in meters, between the two waypoints
+ **/
 float getWaypointDistance(Waypoint *wpt1, Waypoint *wpt2) {
     if (wpt1 == NULL || wpt2 == NULL) {
         return 0;
@@ -1167,6 +1229,17 @@ float getWaypointDistance(Waypoint *wpt1, Waypoint *wpt2) {
     return getDistance((float)(wpt1->latitude), (float)(wpt1->longitude), (float)(wpt2->latitude), (float)(wpt2->longitude));
 }
 
+/**
+ * Gets the distance between a waypoint and another point (lat,lon).
+ * 
+ * Parameters:
+ *   wpt -- the first waypoint
+ *   lat -- the latitude of the second point
+ *   lon -- the longitude of the second point
+ * 
+ * Returns:
+ *   The distance, in meters, between the waypoint and the other point
+ **/
 float getWaypointPointDistance(Waypoint *wpt, float lat, float lon) {
     if (wpt == NULL) {
         return 0;
@@ -1174,6 +1247,10 @@ float getWaypointPointDistance(Waypoint *wpt, float lat, float lon) {
     return getDistance((float)(wpt->latitude), (float)(wpt->longitude), lat, lon);
 }
 
+/**
+ * Calculates the total distance of a list of waypoints from the first waypoint
+ * in the list to the last waypoint in list.
+ **/
 float getPathDistance(List *waypoints) {
     if (waypoints == NULL) {
         return 0;
@@ -1196,6 +1273,15 @@ float getPathDistance(List *waypoints) {
     return len;
 }
 
+/**
+ * Gets the total length of a route.
+ * 
+ * Parameters:
+ *   rt -- the route to evaluate
+ * 
+ * Returns:
+ *   The total length of the route in meters.
+ **/
 float getRouteLen(const Route *rt) {
     if (rt == NULL) {
         return 0;
@@ -1203,6 +1289,15 @@ float getRouteLen(const Route *rt) {
     return getPathDistance(rt->waypoints);
 }
 
+/**
+ * Gets the total length of a track.
+ * 
+ * Parameters:
+ *   tr -- the track to evaluate
+ * 
+ * Returns:
+ *   The total length of the track in meters.
+ **/
 float getTrackLen(const Track *tr) {
     if (tr == NULL) {
         return 0;
@@ -1232,6 +1327,16 @@ float getTrackLen(const Track *tr) {
     return len;
 }
 
+/**
+ * Rounds a floating point number to the nearest ten. The length
+ * must be non-negative.
+ * 
+ * Parameters:
+ *   len -- the length to be rounded; must be non-negative
+ * 
+ * Returns:
+ *   The length, rounded to the nearest ten
+ **/
 float round10(float len) {
     int base = (int)(len/10)*10; // Remove ones digit and fractional part
     float r = len - base;
@@ -1243,6 +1348,10 @@ float round10(float len) {
     }
 }
 
+/**
+ * Gets the number of routes from a GPX document that have a given
+ * length, within a range delta.
+ **/
 int numRoutesWithLength(const GPXdoc *doc, float len, float delta) {
     if (doc == NULL || len < 0 || delta < 0) {
         return 0;
@@ -1265,6 +1374,10 @@ int numRoutesWithLength(const GPXdoc *doc, float len, float delta) {
     return numRoutes;
 }
 
+/**
+ * Gets the number of tracks from a GPX document that have a given
+ * length, within a range delta.
+ **/
 int numTracksWithLength(const GPXdoc *doc, float len, float delta) {
     if (doc == NULL || len < 0 || delta < 0) {
         return 0;
@@ -1287,6 +1400,15 @@ int numTracksWithLength(const GPXdoc *doc, float len, float delta) {
     return numTracks;
 }
 
+/**
+ * Checks if a loop exists between the first and last waypoints
+ * in a list of waypoints. The list must contain at least 4 waypoints.
+ * 
+ * Parameters:
+ *   waypoints -- the list of waypoints; must have at least 4
+ *   delta -- the maximum distance that the start and end waypoints
+ *            can be from one another
+ **/
 bool hasLoop(List *waypoints, float delta) {
     if (waypoints == NULL) {
         return false;
@@ -1302,6 +1424,18 @@ bool hasLoop(List *waypoints, float delta) {
     return getWaypointDistance(firstWpt, lastWpt) <= delta;
 }
 
+/**
+ * Checks if a route with at least four waypoints starts and ends
+ * at the same point within a range delta.
+ * 
+ * Parameters:
+ *   tr -- the route to evaluate
+ *   delta -- the maximum distance that the start and end points
+ *            can be from one another
+ * 
+ * Returns:
+ *   true if the route loops or false if it does not loop
+ **/
 bool isLoopRoute(const Route *route, float delta) {
     if (route == NULL || delta < 0) {
         return false;
@@ -1309,13 +1443,18 @@ bool isLoopRoute(const Route *route, float delta) {
     return hasLoop(route->waypoints, delta);
 }
 
-bool isLoopSegment(const TrackSegment *seg, float delta) {
-    if (seg == NULL || delta < 0) {
-        return false;
-    }
-    return hasLoop(seg->waypoints, delta);
-}
-
+/**
+ * Checks if a track with at least four waypoints starts and ends
+ * at the same point within a range delta.
+ * 
+ * Parameters:
+ *   tr -- the track to evaluate
+ *   delta -- the maximum distance that the points can be
+ *            from one another
+ * 
+ * Returns:
+ *   true if the track loops or false if it does not loop
+ **/
 bool isLoopTrack(const Track *tr, float delta) {
     if (tr == NULL || delta < 0) {
         return false;
@@ -1392,6 +1531,7 @@ List *getRoutesBetween(const GPXdoc *doc, float sourceLat, float sourceLong, flo
     return routes;
 }
 
+// Checks if a track is between given start and end locations
 bool isTrackBetween(Track *track, float sourceLat, float sourceLong, float destLat, float destLong, float delta) {
     if (track == NULL) {
         return false;
