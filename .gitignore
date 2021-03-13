@@ -10,6 +10,7 @@
 *.gpx
 *.xsd
 parser/src/test.c
+run.sh
 
 # Workspace files #
 ###################

@@ -18,9 +18,9 @@
 </head>
 <body>
     <h2>File Log</h2>
-    <h5>No files</h5>
+    <h5 id="noFileHeader">No files</h5>
     <div id="fileLog">
-        <table>
+        <table id="fileLogTable">
             <tr>
                 <th>Name</th>
                 <th>Version</th>
@@ -29,26 +29,26 @@
                 <th>Number of routes</th>
                 <th>Number of tracks</th>
             </tr>
-            <tr>
+            <!-- <tr>
                 <td><a href="">test.gpx</a></td>
                 <td>1.1</td>
                 <td>test creator</td>
                 <td>0</td>
                 <td>0</td>
                 <td>0</td>
-            </tr>
+            </tr> -->
         </table>
     </div>
 
     <hr>
 
     <h2>GPX View</h2>
-    <h5>No file selected</h5>
+    <h5 id="noFileSelectedHeader">No file selected</h5>
     <select class="form-control gpxSelect" style="width: 35%">
         <option value="" selected disabled hidden/>Select a GPX file...</option>
     </select>
     <div id="gpxView">
-        <table>
+        <table id="gpxViewTable">
             <tr>
                 <th>Component</th>
                 <th>Name</th>
@@ -57,7 +57,7 @@
                 <th>Loop</th>
                 <th>Actions</th>
             </tr>
-            <tr>
+            <!-- <tr>
                 <td>comp</td>
                 <td>comp name</td>
                 <td>0</td>
@@ -67,7 +67,7 @@
                     <input type="button" value="Rename" class="btn btn-secondary">
                     <input type="button" value="View other data" class="btn btn-secondary">
                 </td>
-            </tr>
+            </tr> -->
         </table>
     </div>
 

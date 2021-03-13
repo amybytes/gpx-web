@@ -57,6 +57,7 @@ table {
 }
 input.gridInput {
     margin-bottom: 3px;
+    margin-right: 3px;
 }
 div.actionDiv {
     display: none;
