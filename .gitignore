@@ -9,8 +9,12 @@
 ##############
 *.gpx
 *.xsd
-src/test.c
+parser/src/test.c
 
 # Workspace files #
 ###################
 .vscode
+
+# Package files #
+#################
+node_modules

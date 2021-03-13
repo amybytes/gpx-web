@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>GPX Web</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="CHANGE ME">
+    <meta name="keywords" content="CHANGE ME">
+    <meta name="author" content="CHANGE ME">
+    <!-- Load jquery, bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="/style.css">
+    <!-- Custom CSS End -->
+</head>
+<body>
+    <h2>File Log</h2>
+    <h5>No files</h5>
+    <div id="fileLog">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Version</th>
+                <th>Creator</th>
+                <th>Number of waypoints</th>
+                <th>Number of routes</th>
+                <th>Number of tracks</th>
+            </tr>
+            <tr>
+                <td><a href="">test.gpx</a></td>
+                <td>1.1</td>
+                <td>test creator</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <h2>GPX View</h2>
+    <h5>No file selected</h5>
+    <select class="form-control gpxSelect" style="width: 35%">
+        <option value="" selected disabled hidden/>Select a GPX file...</option>
+    </select>
+    <div id="gpxView">
+        <table>
+            <tr>
+                <th>Component</th>
+                <th>Name</th>
+                <th>Number of points</th>
+                <th>Length</th>
+                <th>Loop</th>
+                <th>Actions</th>
+            </tr>
+            <tr>
+                <td>comp</td>
+                <td>comp name</td>
+                <td>0</td>
+                <td>0</td>
+                <td>false</td>
+                <td>
+                    <input type="button" value="Rename" class="btn btn-secondary">
+                    <input type="button" value="View other data" class="btn btn-secondary">
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <h2>Actions</h2>
+    <ul style="padding: 0">
+        <input type="button" value="Upload GPX" class="btn btn-secondary" onclick="showUploadGPXAction();">
+        <input type="button" value="Create GPX" class="btn btn-secondary" onclick="showCreateGPXAction();">
+        <input type="button" value="Add route" class="btn btn-secondary" onclick="showAddRouteAction();">
+        <input type="button" value="Find path" class="btn btn-secondary" onclick="showFindPathAction();">
+    </ul>
+
+    <!--
+    <h3>Download test (TEMPORARY)</h3>
+    If the A3 stub is running and simple.gpx exists in the uploads/ directory on the server, then clicking on the link below will download it from the server.<br>
+    <a href="testCard.vcf" download ">simple.gpx</a>
+    <p></p>
+
+    <hr>
+    <div id="blah">I am blah</div>
+    <hr>
+    <form ref='someform'
+          id='someform'>
+          <div class="form-group">
+                <label for="entryBox">Last Name</label>
+                <input type="text" class="form-control" id="entryBox" value="Value" placeholder="Placeholder">
+          </div>
+        <div class="form-group">
+            <input type='submit' class="btn btn-secondary">
+        </div>
+    </form>
+
+    <form ref='uploadForm'
+		id='uploadForm'
+      action='/upload'
+      method='post'
+      encType="multipart/form-data">
+      <div class="form-group">
+      	<input type="file" name="uploadFile" class="btn btn-secondary">
+      	<input type='submit' value='Upload' class="btn btn-secondary">
+      </div>
+    </form>
+-->
+
+    <div id="uploadGpx" class="actionDiv">
+        <h4>Upload GPX File</h4>
+        <form ref="uploadForm"
+            id="uploadForm"
+            action="/upload"
+            method="post"
+            encType="multipart/form-data">
+            <div class="form-group">
+                <input type="file" name="uploadFile" class="btn btn-secondary">
+                <input type="submit" value='Upload' class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <div id="createGpx" class="actionDiv">
+        <h4>Create GPX File</h4>
+        <form ref="createForm" id="createForm">
+            <div class="form-group">
+                <label for="createGpxNameEntry">File name</label>
+                <input type="text" class="form-control" id="createGpxName" placeholder="new.gpx">
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create GPX" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <div id="addRoute" class="actionDiv">
+        <h4>Add Route to GPX File</h4>
+        <form ref="addRouteForm" id="addRouteForm">
+            <!-- GPX file selector -->
+            <div class="form-group">
+                <select class="form-control gpxSelect" style="width: 35%">
+                    <option value="" selected disabled hidden/>Select a GPX file...</option>
+                </select>
+            </div>
+            <!-- Waypoints grid -->
+            <h5>Waypoints</h5>
+            <div class="form-group">
+                <div id="addRouteWaypointGrid">
+                    
+                </div>
+                <input type="button" id="btnAddWpt" value="Add extra waypoint" class="btn btn-secondary">
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Add route" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <div id="findPath" class="actionDiv">
+        <h4>Find Path</h4>
+        <!-- Output table -->
+        <div id="findPathTable">
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Name</th>
+                    <th>Number of points</th>
+                    <th>Length</th>
+                    <th>Loop</th>
+                </tr>
+                <tr>
+                    <td>comp</td>
+                    <td>comp name</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>false</td>
+                </tr>
+            </table>
+        </div>
+        <form ref="findPathForm" id="findPathForm">
+            <!-- Waypoints grid -->
+            <div class="form-group">
+                <h5>Start point</h5>
+                <div class="row">
+                    <div class="col">
+                        <input type="text" class="form-control gridInput" placeholder="latitude">
+                    </div>
+                    <div class="col">
+                        <input type="text" class="form-control gridInput" placeholder="longitude">
+                    </div>
+                </div>
+                <h5>End point</h5>
+                <div class="row">
+                    <div class="col">
+                        <input type="text" class="form-control gridInput" placeholder="latitude">
+                    </div>
+                    <div class="col">
+                        <input type="text" class="form-control gridInput" placeholder="longitude">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Find path" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <!-- Leave me at the bottom of body -->
+    <script src="/index.js"></script>
+</body>
+</html>
