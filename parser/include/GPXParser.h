@@ -411,6 +411,16 @@ Waypoint* JSONtoWaypoint(const char* gpxString);
 Route* JSONtoRoute(const char* gpxString);
 
 
+/* ******************************* A3 CUSTOM functions *************************** */
+
+bool createGPXFileFromJSON(const char *gpxString, char *filename, char *schema);
+char *getAllValidGPXFilesAsJSON(char *dirname, char *schema);
+int validateGPXFile(char *filename, char *schema);
+char *getGPXFileAsJSON(char *filename, char *name);
+char *getGPXRoutesAsJSON(char *filename);
+char *getGPXTracksAsJSON(char *filename);
+
+
 
 /* ******************************* List helper functions  - MUST be implemented *************************** */
 

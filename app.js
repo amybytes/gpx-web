@@ -19,6 +19,16 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 // Important, pass in port as in `npm run dev 1234`, do not change
 const portNum = process.argv[2];
 
+const xsdFile = "gpx.xsd";
+
+var libgpxparser = ffi.Library(__dirname + "/libgpxparser", {
+  "validateGPXFile": ["int", ["string", "string"]],
+  "getAllValidGPXFilesAsJSON": ["string", ["string", "string"]],
+  "getGPXFileAsJSON": ["string", ["string", "string"]],
+  "getGPXRoutesAsJSON": ["string", ["string"]],
+  "getGPXTracksAsJSON": ["string", ["string"]]
+});
+
 // Send HTML at root, do not change
 app.get('/',function(req,res){
   res.sendFile(path.join(__dirname+'/public/index.html'));
@@ -46,14 +56,25 @@ app.post('/upload', function(req, res) {
   }
  
   let uploadFile = req.files.uploadFile;
- 
+
+  if (uploadFile.mimetype != "application/gpx+xml") {
+    return res.status(422).send("The file is not a GPX file.");
+  }
+
   // Use the mv() method to place the file somewhere on your server
   uploadFile.mv('uploads/' + uploadFile.name, function(err) {
     if(err) {
       return res.status(500).send(err);
     }
 
-    res.redirect('/');
+    if (!libgpxparser.validateGPXFile("uploads/" + uploadFile.name, xsdFile)) {
+      fs.unlink("uploads/" + uploadFile.name, function(err) {}); // Delete the temporary file
+      return res.status(422).send("The GPX file is not valid.");
+    }
+
+    let fileJson = libgpxparser.getGPXFileAsJSON("uploads/" + uploadFile.name, uploadFile.name);
+
+    res.status(200).send(fileJson); // Upload successful!
   });
 });
 
@@ -72,10 +93,27 @@ app.get('/uploads/:name', function(req , res){
 //******************** Your code goes here ******************** 
 
 //Sample endpoint
-app.get('/endpoint1', function(req , res){
+app.get('/endpoint1', function(req, res) {
   let retStr = req.query.stuff + " " + req.query.junk;
   res.send({
     stuff: retStr
+  });
+});
+
+app.get('/uploads', function(req, res) {
+  let retJson = JSON.parse(libgpxparser.getAllValidGPXFilesAsJSON("uploads", xsdFile));
+  res.send({
+    files: retJson
+  });
+});
+
+app.get('/gpxinfo', function(req, res) {
+  let filename = req.query.file;
+  let jsonRoutes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + filename));
+  let jsonTracks = JSON.parse(libgpxparser.getGPXTracksAsJSON("uploads/" + filename));
+  res.send({
+    routes: jsonRoutes,
+    tracks: jsonTracks
   });
 });
 

@@ -781,3 +781,11 @@ JSONArray *getJSONArrayFromJSONObject(JSONObject *json, char *name) {
     }
     return (JSONArray *)data;
 }
+
+bool isEmptyJSONObject(JSONObject *json) {
+    return json->numElements == 0;
+}
+
+bool isEmptyJSONArray(JSONArray *json) {
+    return json->numElements == 0;
+}

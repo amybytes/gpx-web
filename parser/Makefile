@@ -20,6 +20,7 @@ parser: $(BIN)libgpxparser.so
 
 $(BIN)libgpxparser.so: $(PARSER_OBJ_FILES) $(BIN)LinkedListAPI.o
 	gcc -shared -o $(BIN)libgpxparser.so $(PARSER_OBJ_FILES) $(BIN)LinkedListAPI.o -lxml2 -lm
+	gcc -shared -o ../libgpxparser.so $(PARSER_OBJ_FILES) $(BIN)LinkedListAPI.o -lxml2 -lm
 
 #Compiles all files named GPX*.c in src/ into object files, places all coresponding GPX*.o files in bin/
 $(BIN)GPX%.o: $(SRC)GPX%.c $(INC)LinkedListAPI.h $(INC)GPX*.h

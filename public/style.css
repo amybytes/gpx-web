@@ -53,12 +53,15 @@ th {
 table {
     overflow: auto;
     width: 100%;
-    /* visibility: collapse; */
+    /* display: none; */
 }
 input.gridInput {
     margin-bottom: 3px;
     margin-right: 3px;
 }
 div.actionDiv {
+    display: none;
+}
+div#gpxView {
     display: none;
 }

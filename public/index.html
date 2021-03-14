@@ -4,9 +4,9 @@
     <title>GPX Web</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="CHANGE ME">
-    <meta name="keywords" content="CHANGE ME">
-    <meta name="author" content="CHANGE ME">
+    <meta name="description" content="This is a simple interface for interacting with GPX files on a server.">
+    <meta name="keywords" content="gpx">
+    <meta name="author" content="Ethan Rowan">
     <!-- Load jquery, bootstrap -->
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
@@ -40,11 +40,25 @@
         </table>
     </div>
 
+    <div id="uploadGpx">
+        <h4>Upload GPX File</h4>
+        <form ref="uploadForm"
+            id="uploadForm"
+            action="/upload"
+            method="post"
+            encType="multipart/form-data">
+            <div class="form-group">
+                <input type="file" accept=".gpx" id="uploadFile" name="uploadFile" class="btn btn-secondary">
+                <input type="submit" value='Upload' class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
     <hr>
 
     <h2>GPX View</h2>
     <h5 id="noFileSelectedHeader">No file selected</h5>
-    <select class="form-control gpxSelect" style="width: 35%">
+    <select id="gpxViewFileSelect" class="form-control gpxSelect" style="width: 35%">
         <option value="" selected disabled hidden/>Select a GPX file...</option>
     </select>
     <div id="gpxView">
@@ -75,7 +89,7 @@
 
     <h2>Actions</h2>
     <ul style="padding: 0">
-        <input type="button" value="Upload GPX" class="btn btn-secondary" onclick="showUploadGPXAction();">
+        <!-- <input type="button" value="Upload GPX" class="btn btn-secondary" onclick="showUploadGPXAction();"> -->
         <input type="button" value="Create GPX" class="btn btn-secondary" onclick="showCreateGPXAction();">
         <input type="button" value="Add route" class="btn btn-secondary" onclick="showAddRouteAction();">
         <input type="button" value="Find path" class="btn btn-secondary" onclick="showFindPathAction();">
@@ -112,20 +126,6 @@
       </div>
     </form>
 -->
-
-    <div id="uploadGpx" class="actionDiv">
-        <h4>Upload GPX File</h4>
-        <form ref="uploadForm"
-            id="uploadForm"
-            action="/upload"
-            method="post"
-            encType="multipart/form-data">
-            <div class="form-group">
-                <input type="file" name="uploadFile" class="btn btn-secondary">
-                <input type="submit" value='Upload' class="btn btn-secondary">
-            </div>
-        </form>
-    </div>
 
     <div id="createGpx" class="actionDiv">
         <h4>Create GPX File</h4>

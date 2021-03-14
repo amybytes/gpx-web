@@ -19,3 +19,8 @@ run.sh
 # Package files #
 #################
 node_modules
+
+# Binary files #
+################
+libgpxparser.so
+parser/bin
