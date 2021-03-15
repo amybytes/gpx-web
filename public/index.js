@@ -288,11 +288,11 @@ function validateCreateGPXForm() {
     }
     let creator = document.getElementById("createGpxCreatorEntry");
     if (creator.value.length === 0) {
-        $("createGpxCreatorEntry").addClass("is-invalid");
+        $("#createGpxCreatorEntry").addClass("is-invalid");
         valid = false;
     }
     else {
-        $("createGpxCreatorEntry").removeClass("is-invalid");
+        $("#createGpxCreatorEntry").removeClass("is-invalid");
     }
     return valid;
 }
