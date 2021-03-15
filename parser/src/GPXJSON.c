@@ -853,3 +853,17 @@ JSONArray *getJSONArrayFromJSONArrayAt(JSONArray *json, int i) {
     }
     return (JSONArray *)data;
 }
+
+int getJSONObjectSize(JSONObject *json) {
+    if (json == NULL) {
+        return 0;
+    }
+    return json->numElements;
+}
+
+int getJSONArraySize(JSONArray *json) {
+    if (json == NULL) {
+        return 0;
+    }
+    return json->numElements;
+}

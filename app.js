@@ -29,7 +29,9 @@ var libgpxparser = ffi.Library(__dirname + "/libgpxparser", {
   "getGPXTracksAsJSON": ["string", ["string"]],
   "createGPXFileFromJSON": ["int", ["string", "string", "string"]],
   "addRouteToGPXFile": ["int", ["string", "string"]],
-  "getRouteAsJSON": ["string", ["string"]]
+  "getRouteAsJSON": ["string", ["string"]],
+  "getRoutesBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]],
+  "getTracksBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]]
 });
 
 // Send HTML at root, do not change
@@ -95,14 +97,6 @@ app.get('/uploads/:name', function(req , res){
 
 //******************** Your code goes here ******************** 
 
-//Sample endpoint
-app.get('/endpoint1', function(req, res) {
-  let retStr = req.query.stuff + " " + req.query.junk;
-  res.send({
-    stuff: retStr
-  });
-});
-
 app.get('/uploads', function(req, res) {
   let retJson = JSON.parse(libgpxparser.getAllValidGPXFilesAsJSON("uploads", xsdFile));
   res.send({
@@ -125,12 +119,14 @@ app.use(bodyParser.json());
 
 app.post('/create', function(req, res) {
   let filename = req.body.name;
+  console.log(req.body);
   if (filename === null) {
-    res.status(400).send("Bad request");
+    return res.status(400).send("Bad request");
   }
-  let status = libgpxparser.createGPXFileFromJSON(JSON.stringify(req.query), "uploads/" + filename, xsdFile);
-  if (status == 0) {
-    res.status(422).send("GPX creation failed."); // Unprocessable entity
+  let status = libgpxparser.createGPXFileFromJSON(JSON.stringify(req.body), "uploads/" + filename, xsdFile);
+  console.log(status);
+  if (status === 0) {
+    return res.status(422).send("GPX creation failed."); // Unprocessable entity
   }
   let fileJson = JSON.parse(libgpxparser.getGPXFileAsJSON("uploads/" + filename, filename));
   res.status(200).send(fileJson); // GPX creation successful!
@@ -141,9 +137,31 @@ app.post("/addroute", function(req, res) {
   let waypoints = req.body.waypoints;
   let status = libgpxparser.addRouteToGPXFile("uploads/" + file, JSON.stringify(waypoints));
   if (status == 0) {
-    res.status(422).send("Route could not be added.");
+    return res.status(422).send("Route could not be added.");
   }
   res.status(204).send(); // Success; no content
+});
+
+app.get("/findroutes", function(req, res) {
+  let waypoints = req.query;
+  if (waypoints == null) {
+    return res.status(400).send("Bad request");
+  }
+  else if (waypoints.startLat == null || waypoints.startLon == null ||
+      waypoints.endLat == null || waypoints.endLon == null) {
+    return res.status(400).send("Bad request");
+  }
+  let startLat = parseFloat(waypoints.startLat);
+  let startLon = parseFloat(waypoints.startLon);
+  let endLat = parseFloat(waypoints.endLat);
+  let endLon = parseFloat(waypoints.endLon);
+  let routes = JSON.parse(libgpxparser.getRoutesBetweenAsJSON("uploads", startLat, startLon, endLat, endLon));
+  let tracks = JSON.parse(libgpxparser.getTracksBetweenAsJSON("uploads", startLat, startLon, endLat, endLon));
+  let ret = {
+    routes: routes,
+    tracks: tracks
+  };
+  res.status(200).send(ret);
 });
 
 app.listen(portNum);

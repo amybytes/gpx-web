@@ -1944,8 +1944,6 @@ Route *JSONtoRoute(const char *gpxString) {
 
 int createGPXFileFromJSON(char *gpxString, char *path, char *schema) {
     JSONObject *json = parseJSONString(gpxString);
-    putDoubleInJSONObject(json, "version", 1.1);
-    putStringInJSONObject(json, "creator", "Server");
     char *jsonStr = jsonObjectToStringAndEat(json);
     GPXdoc *gpxDoc = JSONtoGPX(jsonStr);
     free(jsonStr);
@@ -2081,4 +2079,84 @@ int addRouteToGPXFile(char *filename, char *waypoints) {
     deleteGPXdoc(gpxDoc);
 
     return status;
+}
+
+char *getRoutesBetweenAsJSON(char *dirname, float sourceLat, float sourceLon, float destLat, float destLon) {
+    GPXdoc *gpxDoc;
+    List *routesList;
+    JSONArray *routesJson;
+    DIR *dir = NULL;
+    struct dirent *entry;
+    char *filename;
+
+    routesJson = createJSONArray();
+
+    dir = opendir(dirname);
+    if (dir != NULL) {
+        while ((entry = readdir(dir)) != NULL) {
+            if (!strequals(entry->d_name, ".") && !strequals(entry->d_name, "..")) {
+                filename = malloc(strlen(dirname) + strlen(entry->d_name) + 2);
+                sprintf(filename, "%s/%s", dirname, entry->d_name);
+                gpxDoc = createGPXdoc(filename);
+                routesList = getRoutesBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
+                if (routesList != NULL) {
+                    char *routeListStr = routeListToJSON(routesList);
+                    JSONArray *routesListJson = parseJSONArrayString(routeListStr);
+                    free(routeListStr);
+                    if (getJSONArraySize(routesListJson) > 0) {
+                        for (int i = 0; i < getJSONArraySize(routesListJson); i++) {
+                            JSONObject *route = getJSONObjectFromJSONArrayAt(routesListJson, i);
+                            addJSONObjectToJSONArray(routesJson, route);
+                        }
+                    }
+                    freeList(routesList);
+                    deleteJSONArray(routesListJson);
+                }
+                deleteGPXdoc(gpxDoc);
+                free(filename);
+            }
+        }
+        closedir(dir);
+    }
+    return jsonArrayToStringAndEat(routesJson);
+}
+
+char *getTracksBetweenAsJSON(char *dirname, float sourceLat, float sourceLon, float destLat, float destLon) {
+    GPXdoc *gpxDoc;
+    List *tracksList;
+    JSONArray *tracksJson;
+    DIR *dir = NULL;
+    struct dirent *entry;
+    char *filename;
+
+    tracksJson = createJSONArray();
+
+    dir = opendir(dirname);
+    if (dir != NULL) {
+        while ((entry = readdir(dir)) != NULL) {
+            if (!strequals(entry->d_name, ".") && !strequals(entry->d_name, "..")) {
+                filename = malloc(strlen(dirname) + strlen(entry->d_name) + 2);
+                sprintf(filename, "%s/%s", dirname, entry->d_name);
+                gpxDoc = createGPXdoc(filename);
+                tracksList = getTracksBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
+                if (tracksList != NULL) {
+                    char *trackListStr = trackListToJSON(tracksList);
+                    JSONArray *tracksListJson = parseJSONArrayString(trackListStr);
+                    free(trackListStr);
+                    if (getJSONArraySize(tracksListJson) > 0) {
+                        for (int i = 0; i < getJSONArraySize(tracksListJson); i++) {
+                            JSONObject *track = getJSONObjectFromJSONArrayAt(tracksListJson, i);
+                            addJSONObjectToJSONArray(tracksJson, track);
+                        }
+                    }
+                    freeList(tracksList);
+                    deleteJSONArray(tracksListJson);
+                }
+                deleteGPXdoc(gpxDoc);
+                free(filename);
+            }
+        }
+        closedir(dir);
+    }
+    return jsonArrayToStringAndEat(tracksJson);
 }

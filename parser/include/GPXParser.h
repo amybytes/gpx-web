@@ -421,7 +421,8 @@ char *getGPXRoutesAsJSON(char *filename);
 char *getGPXTracksAsJSON(char *filename);
 int addRouteToGPXFile(char *filename, char *waypoints);
 char *getRouteAsJSON(char *waypoints);
-
+char *getRoutesBetweenAsJSON(char *dirname, float sourceLat, float sourceLon, float destLat, float destLon);
+char *getTracksBetweenAsJSON(char *dirname, float sourceLat, float sourceLon, float destLat, float destLon);
 
 
 /* ******************************* List helper functions  - MUST be implemented *************************** */

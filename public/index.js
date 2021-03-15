@@ -46,12 +46,13 @@ $(document).ready(function() {
         dataType: 'json',
         url: '/uploads',
         success: function (data) {
+            console.log("GPX files loaded successfully");
             files = data.files;
             initializeFileLog();
             initializeGPXDropDowns();
         },
         fail: function(error) {
-            console.log(error); 
+            console.log("Failed to load GPX files: " + error.responseText); 
         }
     });
 
@@ -70,10 +71,12 @@ $(document).ready(function() {
             data: formdata,
             url: '/upload',
             success: function (data) {
+                console.log("Successfully uploaded file");
                 alert("Upload successful!");
                 addNewFile(data);
             },
             error: function(error) {
+                console.log("Failed to upload file: " + error.responseText);
                 alert("Error: " + error.responseText);
             }
         });
@@ -81,29 +84,34 @@ $(document).ready(function() {
 
     $("#createForm").submit(function(e) {
         e.preventDefault();
-        let nameEntry = document.getElementById("createGpxNameEntry");
-        let filename = nameEntry.value;
-        if (filename.length <= 4 || filename.match(".gpx$") === null) {
-            $("#createGpxNameEntry").addClass("is-invalid");
+        // let nameEntry = document.getElementById("createGpxNameEntry");
+        // let filename = nameEntry.value;
+        // if (filename.length <= 4 || filename.match(".gpx$") === null) {
+        //     $("#createGpxNameEntry").addClass("is-invalid");
+        //     return;
+        // }
+        // else {
+        //     $("#createGpxNameEntry").removeClass("is-invalid");
+        // }
+        if (!validateCreateGPXForm()) {
             return;
         }
-        else {
-            $("#createGpxNameEntry").removeClass("is-invalid");
-        }
+        let file = getCreateGPXFile();
+        console.log(file);
         $.ajax({
             type: 'post',
             dataType: 'json',
             contentType: 'application/json',
             url: '/create',
-            data: JSON.stringify({
-                name: filename
-            }),
+            data: JSON.stringify(file),
             success: function(data) {
+                console.log("Successfully created GPX file");
                 alert("GPX creation successful!");
                 addNewFile(data);
             },
             error: function(error) {
-                alert("Error: " + error);
+                console.log("Failed to create GPX file: " + error.responseText);
+                alert("Error: " + error.responseText);
             }
         });
     });
@@ -127,6 +135,7 @@ $(document).ready(function() {
                 waypoints: waypoints
             }),
             success: function(data) {
+                console.log("Successfully added route to '" + file.name + "'");
                 alert("Route added successfully!");
                 incrementFileLogNumRoutes(file.name);
                 if (getGPXViewSelectedFile() === file.name) {
@@ -134,7 +143,8 @@ $(document).ready(function() {
                 }
             },
             error: function(error) {
-                alert("Error: " + error);
+                console.log("Failed to add route to '" + file.name + "': " + error.responseText);
+                alert("Error: " + error.responseText);
             }
         });
     });
@@ -142,9 +152,37 @@ $(document).ready(function() {
     $("#findPathForm").submit(function(e) {
         console.log("Find path requested");
         e.preventDefault();
-        //Pass data to the Ajax call, so it gets passed to the server
+        if (!validateFindRouteForm()) {
+            return;
+        }
+        let waypoints = getFindRouteWaypoints();
+        console.log(waypoints);
         $.ajax({
-            //Create an object for connecting to another waypoint
+            type: 'get',
+            dataType: 'json',
+            contentType: 'application/json',
+            url: '/findroutes',
+            data: {
+                startLat: waypoints.start.lat,
+                startLon: waypoints.start.lon,
+                endLat: waypoints.end.lat,
+                endLon: waypoints.end.lon
+            },
+            success: function(data) {
+                console.log("Successfully got list of found routes");
+                $("#findPathView").show();
+                updateFoundPathText(data.routes.length + data.tracks.length);
+                clearFindPathTable();
+                let routes = data.routes;
+                let tracks = data.tracks;
+                addComponentsToFindPathTable(routes, "Route");
+                addComponentsToFindPathTable(tracks, "Track");
+                window.scrollBy(0, document.body.scrollHeight);
+            },
+            error: function(error) {
+                console.log("Failed to get list of found routes: " + error.responseText);
+                alert("Error: " + error.responseText);
+            }
         });
     });
 
@@ -179,24 +217,123 @@ function setGPXViewSelectedFile(file) {
         data: {"file": file.name},
         url: '/gpxinfo',
         success: function (data) {
+            console.log("Successfully loaded GPX info for '" + file.name + "'");
             $("#noFileSelectedHeader").hide();
             $("#gpxView").show();
             clearGPXViewTable();
-            console.log(data);
             let routes = data.routes;
             let tracks = data.tracks;
             addComponentsToGPXView(file, routes, "Route");
             addComponentsToGPXView(file, tracks, "Track");
         },
         fail: function(error) {
-            console.log(error); 
+            console.log("Failed to load GPX info for '" + file.name + "': " + error.responseText);
+            alert("Error: " + error.responseText);
         }
     });
+}
+
+function updateFoundPathText(numPaths) {
+    let foundPathText = document.getElementById("foundPathText");
+    $("#foundPathText").show();
+    if (numPaths === 0) {
+        $("#foundPathText").css("color", "red");
+        foundPathText.innerText = "Found " + numPaths + " paths";
+    }
+    else {
+        $("#foundPathText").css("color", "green");
+        if (numPaths === 1) {
+            foundPathText.innerText = "Found " + numPaths + " path";
+        }
+        else {
+            foundPathText.innerText = "Found " + numPaths + " paths";
+        }
+    }
 }
 
 function getGPXViewSelectedFile() {
     let fileSelect = document.getElementById("gpxViewFileSelect");
     return fileSelect.options[fileSelect.selectedIndex].value;
+}
+
+function getCreateGPXFile() {
+    let nameEntry = document.getElementById("createGpxNameEntry");
+    let versionEntry = document.getElementById("createGpxVersionEntry");
+    let creatorEntry = document.getElementById("createGpxCreatorEntry");
+    let file = {
+        name: nameEntry.value,
+        version: parseFloat(versionEntry.value),
+        creator: creatorEntry.value
+    };
+    return file;
+}
+
+function validateCreateGPXForm() {
+    let valid = true;
+    let nameEntry = document.getElementById("createGpxNameEntry");
+    if (nameEntry.value.length <= 4 || nameEntry.value.match(".gpx$") === null) {
+        $("#createGpxNameEntry").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#createGpxNameEntry").removeClass("is-invalid");
+    }
+    let version = document.getElementById("createGpxVersionEntry");
+    if (!version.value.match("^[0-9]+[.]?[0-9]*$")) {
+        $("#createGpxVersionEntry").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#createGpxVersionEntry").removeClass("is-invalid");
+    }
+    let creator = document.getElementById("createGpxCreatorEntry");
+    if (creator.value.length === 0) {
+        $("createGpxCreatorEntry").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("createGpxCreatorEntry").removeClass("is-invalid");
+    }
+    return valid;
+}
+
+function getFindRouteWaypoints() {
+    let startLatInput = document.getElementById("startLatInput");
+    let startLonInput = document.getElementById("startLonInput");
+    let endLatInput = document.getElementById("endLatInput");
+    let endLonInput = document.getElementById("endLonInput");
+    let waypoints = {
+        start: {
+            lat: parseFloat(startLatInput.value),
+            lon: parseFloat(startLonInput.value)
+        },
+        end: {
+            lat: parseFloat(endLatInput.value),
+            lon: parseFloat(endLonInput.value)
+        }
+    };
+    return waypoints;
+}
+
+function validateFindRouteForm() {
+    let valid = true;
+    let startLatInput = document.getElementById("startLatInput");
+    let startLonInput = document.getElementById("startLonInput");
+    let endLatInput = document.getElementById("endLatInput");
+    let endLonInput = document.getElementById("endLonInput");
+    if (!validateWaypointInput(startLatInput)) {
+        valid = false;
+    }
+    if (!validateWaypointInput(startLonInput)) {
+        valid = false;
+    }
+    if (!validateWaypointInput(endLatInput)) {
+        valid = false;
+    }
+    if (!validateWaypointInput(endLonInput)) {
+        valid = false;
+    }
+    return valid;
 }
 
 function getAddRouteWaypoints() {
@@ -207,10 +344,8 @@ function getAddRouteWaypoints() {
         let waypoint = {};
         waypoint.lat = parseFloat(latitudeInputs[i].value);
         waypoint.lon = parseFloat(longitudeInputs[i].value);
-        console.log(waypoint);
         waypoints.push(waypoint);
     }
-    console.log(waypoints);
     return waypoints;
 }
 
@@ -227,24 +362,26 @@ function validateAddRouteForm() {
     let latitudeInputs = document.getElementsByClassName("latitudeInput");
     let longitudeInputs = document.getElementsByClassName("longitudeInput");
     for (let i = 0; i < latitudeInputs.length; i++) {
-        // Use regex to validate for floating point numbers
-        if (!latitudeInputs[i].value.match("^-?[0-9]+[.]?[0-9]*$")) {
-            latitudeInputs[i].classList.add("is-invalid");
+        if (!validateWaypointInput(latitudeInputs[i])) {
             valid = false;
         }
-        else {
-            latitudeInputs[i].classList.remove("is-invalid");
-        }
-        // Use regex to validate for floating point numbers
-        if (!longitudeInputs[i].value.match("^-?[0-9]+[.]?[0-9]*$")) {
-            longitudeInputs[i].classList.add("is-invalid");
+        if (!validateWaypointInput(longitudeInputs[i])) {
             valid = false;
-        }
-        else {
-            longitudeInputs[i].classList.remove("is-invalid");
         }
     }
     return valid;
+}
+
+function validateWaypointInput(input) {
+    // Use regex to validate for floating point numbers
+    if (!input.value.match("^-?[0-9]+[.]?[0-9]*$")) {
+        input.classList.add("is-invalid");
+        return false;
+    }
+    else {
+        input.classList.remove("is-invalid");
+        return true;
+    }
 }
 
 function addNewFile(data) {
@@ -391,6 +528,15 @@ function addFileToFileLog(file) {
 
 function addComponentsToGPXView(file, components, type) {
     let gpxViewTable = document.getElementById("gpxViewTable");
+    addComponentsToTable(gpxViewTable, file, components, type, true);
+}
+
+function addComponentsToFindPathTable(components, type) {
+    let findPathTable = document.getElementById("findPathTable");
+    addComponentsToTable(findPathTable, null, components, type, false);
+}
+
+function addComponentsToTable(table, file, components, type, hasActions) {
     for (let i = 0; i < components.length; i++) {
         let row = document.createElement("tr");
         let td = document.createElement("td");
@@ -408,19 +554,21 @@ function addComponentsToGPXView(file, components, type) {
         td = document.createElement("td");
         td.innerHTML = components[i]["loop"];
         row.appendChild(td);
-        td = document.createElement("td");
-        let btnRename = createBasicButton("Rename");
-        td.appendChild(btnRename);
-        btnRename.onclick = function(e) {
-            renameComponent(file["name"], components[i]["name"], type);
+        if (hasActions) {
+            td = document.createElement("td");
+            let btnRename = createBasicButton("Rename");
+            td.appendChild(btnRename);
+            btnRename.onclick = function(e) {
+                renameComponent(file["name"], components[i]["name"], type);
+            }
+            let btnViewOtherData = createBasicButton("View other data");
+            td.appendChild(btnViewOtherData);
+            btnViewOtherData.onclick = function() {
+                showOtherData(file["name"]);
+            };
+            row.appendChild(td);
         }
-        let btnViewOtherData = createBasicButton("View other data");
-        td.appendChild(btnViewOtherData);
-        btnViewOtherData.onclick = function() {
-            showOtherData(file["name"]);
-        };
-        row.appendChild(td);
-        gpxViewTable.appendChild(row);
+        table.appendChild(row);
     }
 }
 
@@ -435,7 +583,16 @@ function addOptionToDropDowns(filename) {
 
 function clearGPXViewTable() {
     let gpxViewTable = document.getElementById("gpxViewTable");
-    while (gpxViewTable.children.length > 1) {
-        gpxViewTable.removeChild(gpxViewTable.lastChild);
+    clearTable(gpxViewTable);
+}
+
+function clearFindPathTable() {
+    let findPathTable = document.getElementById("findPathTable");
+    clearTable(findPathTable);
+}
+
+function clearTable(table) {
+    while (table.children.length > 1) {
+        table.removeChild(table.lastChild);
     }
 }

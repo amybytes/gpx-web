@@ -61,7 +61,7 @@
     <select id="gpxViewFileSelect" class="form-control gpxSelect" style="width: 35%">
         <option value="" selected disabled hidden/>Select a GPX file...</option>
     </select>
-    <div id="gpxView">
+    <div id="gpxView" class="hiddenView">
         <table id="gpxViewTable">
             <tr>
                 <th>Component</th>
@@ -138,6 +138,20 @@
                 </div>
             </div>
             <div class="form-group">
+                <label id="createGpxVersion" for="createGpxVersionEntry">Version</label>
+                <input type="text" class="form-control" id="createGpxVersionEntry" placeholder="version">
+                <div class="invalid-feedback">
+                    You must enter a version number.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="createGpxCreator" for="createGpxCreatorEntry">Creator</label>
+                <input type="text" class="form-control" id="createGpxCreatorEntry" placeholder="creator">
+                <div class="invalid-feedback">
+                    You must enter a creator name.
+                </div>
+            </div>
+            <div class="form-group">
                 <input type="submit" value="Create GPX" class="btn btn-secondary">
             </div>
         </form>
@@ -175,22 +189,23 @@
     <div id="findPath" class="actionDiv">
         <h4>Find Path</h4>
         <!-- Output table -->
-        <div id="findPathTable">
-            <table>
+        <div id="findPathView" class="hiddenView">
+            <table id="findPathTable">
                 <tr>
                     <th>Component</th>
                     <th>Name</th>
                     <th>Number of points</th>
                     <th>Length</th>
                     <th>Loop</th>
+                    <!-- <th>Actions</th> -->
                 </tr>
-                <tr>
+                <!-- <tr>
                     <td>comp</td>
                     <td>comp name</td>
                     <td>0</td>
                     <td>0</td>
                     <td>false</td>
-                </tr>
+                </tr> -->
             </table>
         </div>
         <form ref="findPathForm" id="findPathForm">
@@ -199,23 +214,24 @@
                 <h5>Start point</h5>
                 <div class="row">
                     <div class="col">
-                        <input type="text" class="form-control gridInput" placeholder="latitude">
+                        <input type="text" id="startLatInput" class="form-control gridInput" placeholder="latitude">
                     </div>
                     <div class="col">
-                        <input type="text" class="form-control gridInput" placeholder="longitude">
+                        <input type="text" id="startLonInput" class="form-control gridInput" placeholder="longitude">
                     </div>
                 </div>
                 <h5>End point</h5>
                 <div class="row">
                     <div class="col">
-                        <input type="text" class="form-control gridInput" placeholder="latitude">
+                        <input type="text" id="endLatInput" class="form-control gridInput" placeholder="latitude">
                     </div>
                     <div class="col">
-                        <input type="text" class="form-control gridInput" placeholder="longitude">
+                        <input type="text" id="endLonInput" class="form-control gridInput" placeholder="longitude">
                     </div>
                 </div>
             </div>
             <div class="form-group">
+                <p id="foundPathText" class="hiddenView"></p>
                 <input type="submit" value="Find path" class="btn btn-secondary">
             </div>
         </form>
