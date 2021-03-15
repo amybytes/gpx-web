@@ -1942,11 +1942,16 @@ Route *JSONtoRoute(const char *gpxString) {
     return route;
 }
 
-bool createGPXFileFromJSON(const char *gpxString, char *filename, char *schema) {
-    GPXdoc *gpxDoc = JSONtoGPX(gpxString);
+int createGPXFileFromJSON(char *gpxString, char *path, char *schema) {
+    JSONObject *json = parseJSONString(gpxString);
+    putDoubleInJSONObject(json, "version", 1.1);
+    putStringInJSONObject(json, "creator", "Server");
+    char *jsonStr = jsonObjectToStringAndEat(json);
+    GPXdoc *gpxDoc = JSONtoGPX(jsonStr);
+    free(jsonStr);
     int status = validateGPXDoc(gpxDoc, schema);
     if (status == 1) {
-        status = writeGPXdoc(gpxDoc, filename);
+        status = writeGPXdoc(gpxDoc, path);
     }
     deleteGPXdoc(gpxDoc);
     return status;
@@ -2006,6 +2011,7 @@ char *getGPXFileAsJSON(char *filename, char *name) {
     char *jsonStr = GPXtoJSON(gpxDoc);
     deleteGPXdoc(gpxDoc);
     json = parseJSONString(jsonStr);
+    free(jsonStr);
 
     putStringInJSONObject(json, "name", name);
 
@@ -2032,4 +2038,47 @@ char *getGPXTracksAsJSON(char *filename) {
     char *tracks = trackListToJSON(gpxDoc->tracks);
     deleteGPXdoc(gpxDoc);
     return tracks;
+}
+
+Route *getRouteFromWaypointsJSON(char *waypoints) {
+    JSONArray *json = parseJSONArrayString(waypoints);
+    Route *route = malloc(sizeof(Route));
+    route->name = malloc(5);
+    strcpy(route->name, "None");
+    route->waypoints = initializeList(waypointToString, deleteWaypoint, compareWaypoints);
+    route->otherData = initializeList(gpxDataToString, deleteGpxData, compareGpxData);
+
+    JSONObject *waypointJson;
+    Waypoint *wpt;
+    for (int i = 0; i < json->numElements; i++) {
+        waypointJson = getJSONObjectFromJSONArrayAt(json, i);
+        char *waypointStr = jsonObjectToString(waypointJson);
+        wpt = JSONtoWaypoint(waypointStr);
+        free(waypointStr);
+        addWaypoint(route, wpt);
+    }
+    deleteJSONArray(json);
+    return route;
+}
+
+char *getRouteAsJSON(char *waypoints) {
+    Route *route = getRouteFromWaypointsJSON(waypoints);
+    char *routeJson = routeToJSON(route);
+    deleteRoute(route);
+    return routeJson;
+}
+
+int addRouteToGPXFile(char *filename, char *waypoints) {
+    GPXdoc *gpxDoc = createGPXdoc(filename);
+    Route *route = getRouteFromWaypointsJSON(waypoints);
+
+    if (gpxDoc == NULL || route == NULL) {
+        return 0;
+    }
+
+    addRoute(gpxDoc, route);
+    int status = writeGPXdoc(gpxDoc, filename);
+    deleteGPXdoc(gpxDoc);
+
+    return status;
 }

@@ -131,8 +131,11 @@
         <h4>Create GPX File</h4>
         <form ref="createForm" id="createForm">
             <div class="form-group">
-                <label for="createGpxNameEntry">File name</label>
-                <input type="text" class="form-control" id="createGpxName" placeholder="new.gpx">
+                <label id="createGpxName" for="createGpxNameEntry">File name</label>
+                <input type="text" class="form-control" id="createGpxNameEntry" placeholder="new.gpx">
+                <div class="invalid-feedback">
+                    You must enter a file name ending in '.gpx'.
+                </div>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create GPX" class="btn btn-secondary">
@@ -145,9 +148,12 @@
         <form ref="addRouteForm" id="addRouteForm">
             <!-- GPX file selector -->
             <div class="form-group">
-                <select class="form-control gpxSelect" style="width: 35%">
-                    <option value="" selected disabled hidden/>Select a GPX file...</option>
+                <select id="addRouteFileSelect" class="form-control gpxSelect" style="width: 35%">
+                    <option value="" class="dropdown-item" selected disabled hidden/>Select a GPX file...</option>
                 </select>
+                <div class="invalid-feedback">
+                    You must select a file.
+                </div>
             </div>
             <!-- Waypoints grid -->
             <h5>Waypoints</h5>
@@ -155,6 +161,9 @@
                 <div id="addRouteWaypointGrid">
                     
                 </div>
+                <!-- <div class="invalid-feedback">
+                    Both latitude and longitude must have a value.
+                </div> -->
                 <input type="button" id="btnAddWpt" value="Add extra waypoint" class="btn btn-secondary">
             </div>
             <div class="form-group">

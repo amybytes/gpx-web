@@ -413,12 +413,14 @@ Route* JSONtoRoute(const char* gpxString);
 
 /* ******************************* A3 CUSTOM functions *************************** */
 
-bool createGPXFileFromJSON(const char *gpxString, char *filename, char *schema);
+int createGPXFileFromJSON(char *gpxString, char *path, char *schema);
 char *getAllValidGPXFilesAsJSON(char *dirname, char *schema);
 int validateGPXFile(char *filename, char *schema);
 char *getGPXFileAsJSON(char *filename, char *name);
 char *getGPXRoutesAsJSON(char *filename);
 char *getGPXTracksAsJSON(char *filename);
+int addRouteToGPXFile(char *filename, char *waypoints);
+char *getRouteAsJSON(char *waypoints);
 
 
 

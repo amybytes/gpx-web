@@ -106,5 +106,11 @@ void addBoolToJSONArray(JSONArray *json, bool value);
 void addStringToJSONArray(JSONArray *json, char *value);
 void addJSONObjectToJSONArray(JSONArray *json, JSONObject *value);
 void addJSONArrayToJSONArray(JSONArray *json, JSONArray *value);
+int getIntFromJSONArrayAt(JSONArray *json, int i);
+double getDoubleFromJSONArrayAt(JSONArray *json, int i);
+bool getBoolFromJSONArrayAt(JSONArray *json, int i);
+char *getStringFromJSONArrayAt(JSONArray *json, int i);
+JSONObject *getJSONObjectFromJSONArrayAt(JSONArray *json, int i);
+JSONArray *getJSONArrayFromJSONArrayAt(JSONArray *json, int i);
 
 #endif

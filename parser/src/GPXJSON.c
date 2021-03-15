@@ -783,9 +783,73 @@ JSONArray *getJSONArrayFromJSONObject(JSONObject *json, char *name) {
 }
 
 bool isEmptyJSONObject(JSONObject *json) {
+    if (json == NULL) {
+        return false;
+    }
     return json->numElements == 0;
 }
 
 bool isEmptyJSONArray(JSONArray *json) {
+    if (json == NULL) {
+        return false;
+    }
     return json->numElements == 0;
+}
+
+void *getDataFromJSONArrayAt(JSONArray *json, int i) {
+    if (json == NULL || i < 0 || (json != NULL && i >= json->numElements)) {
+        return NULL;
+    }
+    ListIterator it = createIterator(json->data);
+    JSONArrData *ele;
+    while (i-- >= 0 && (ele = (JSONArrData *)nextElement(&it)) != NULL) {}
+    return ele->value;
+}
+
+int getIntFromJSONArrayAt(JSONArray *json, int i) {
+    void *data = getDataFromJSONArrayAt(json, i);
+    if (data == NULL) {
+        return 0;
+    }
+    return *((int *)data);
+}
+
+double getDoubleFromJSONArrayAt(JSONArray *json, int i) {
+    void *data = getDataFromJSONArrayAt(json, i);
+    if (data == NULL) {
+        return 0;
+    }
+    return *((double *)data);
+}
+
+bool getBoolFromJSONArrayAt(JSONArray *json, int i) {
+    void *data = getDataFromJSONArrayAt(json, i);
+    if (data == NULL) {
+        return 0;
+    }
+    return *((bool *)data);
+}
+
+char *getStringFromJSONArrayAt(JSONArray *json, int i) {
+    void *data = getDataFromJSONArrayAt(json, i);
+    if (data == NULL) {
+        return NULL;
+    }
+    return (char *)data;
+}
+
+JSONObject *getJSONObjectFromJSONArrayAt(JSONArray *json, int i) {
+    void *data = getDataFromJSONArrayAt(json, i);
+    if (data == NULL) {
+        return NULL;
+    }
+    return (JSONObject *)data;
+}
+
+JSONArray *getJSONArrayFromJSONArrayAt(JSONArray *json, int i) {
+    void *data = getDataFromJSONArrayAt(json, i);
+    if (data == NULL) {
+        return NULL;
+    }
+    return (JSONArray *)data;
 }

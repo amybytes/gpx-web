@@ -26,7 +26,10 @@ var libgpxparser = ffi.Library(__dirname + "/libgpxparser", {
   "getAllValidGPXFilesAsJSON": ["string", ["string", "string"]],
   "getGPXFileAsJSON": ["string", ["string", "string"]],
   "getGPXRoutesAsJSON": ["string", ["string"]],
-  "getGPXTracksAsJSON": ["string", ["string"]]
+  "getGPXTracksAsJSON": ["string", ["string"]],
+  "createGPXFileFromJSON": ["int", ["string", "string", "string"]],
+  "addRouteToGPXFile": ["int", ["string", "string"]],
+  "getRouteAsJSON": ["string", ["string"]]
 });
 
 // Send HTML at root, do not change
@@ -115,6 +118,32 @@ app.get('/gpxinfo', function(req, res) {
     routes: jsonRoutes,
     tracks: jsonTracks
   });
+});
+
+const bodyParser = require('body-parser');
+app.use(bodyParser.json());
+
+app.post('/create', function(req, res) {
+  let filename = req.body.name;
+  if (filename === null) {
+    res.status(400).send("Bad request");
+  }
+  let status = libgpxparser.createGPXFileFromJSON(JSON.stringify(req.query), "uploads/" + filename, xsdFile);
+  if (status == 0) {
+    res.status(422).send("GPX creation failed."); // Unprocessable entity
+  }
+  let fileJson = JSON.parse(libgpxparser.getGPXFileAsJSON("uploads/" + filename, filename));
+  res.status(200).send(fileJson); // GPX creation successful!
+});
+
+app.post("/addroute", function(req, res) {
+  let file = req.body.file;
+  let waypoints = req.body.waypoints;
+  let status = libgpxparser.addRouteToGPXFile("uploads/" + file, JSON.stringify(waypoints));
+  if (status == 0) {
+    res.status(422).send("Route could not be added.");
+  }
+  res.status(204).send(); // Success; no content
 });
 
 app.listen(portNum);
