@@ -1624,7 +1624,7 @@ JSONObject *routeToJSONObject(const Route *rt) {
 
     putStringInJSONObject(json, "name", !isEmptyString(name) ? name : "None");
     putIntInJSONObject(json, "numPoints", numPoints);
-    putDoubleInJSONObject(json, "len", (double)routeLen);
+    putDoubleInJSONObject(json, "len", (double)routeLen, true);
     putBoolInJSONObject(json, "loop", loop);
 
     return json;
@@ -1647,7 +1647,7 @@ JSONObject *trackToJSONObject(const Track *tr) {
     bool loop = isLoopTrack(tr, 10);
 
     putStringInJSONObject(json, "name", !isEmptyString(name) ? name : "None");
-    putDoubleInJSONObject(json, "len", (float)trackLen);
+    putDoubleInJSONObject(json, "len", (float)trackLen, true);
     putBoolInJSONObject(json, "loop", loop);
 
     return json;
@@ -1763,7 +1763,7 @@ char *GPXtoJSON(const GPXdoc *gpx) {
         return jsonObjectToStringAndEat(json);
     }
 
-    putDoubleInJSONObject(json, "version", gpx->version);
+    putDoubleInJSONObject(json, "version", gpx->version, true);
     putStringInJSONObject(json, "creator", gpx->creator);
     putIntInJSONObject(json, "numWaypoints", getLength(gpx->waypoints));
     putIntInJSONObject(json, "numRoutes", getLength(gpx->routes));
@@ -1955,41 +1955,19 @@ int createGPXFileFromJSON(char *gpxString, char *path, char *schema) {
     return status;
 }
 
-char *getAllValidGPXFilesAsJSON(char *dirname, char *schema) {
-    JSONArray *jsonArr;
-    JSONObject *docJsonObj;
-    GPXdoc *doc;
-    char *docJson;
-    DIR *dir = NULL;
-    struct dirent *entry;
-    char *filename;
+char *getValidGPXFileAsJSON(char *filename, char *name, char *schema) {
+    GPXdoc *gpxDoc;
+    JSONObject *json;
 
-    jsonArr = createJSONArray();
+    gpxDoc = createValidGPXdoc(filename, schema);
+    char *jsonStr = GPXtoJSON(gpxDoc);
+    deleteGPXdoc(gpxDoc);
+    json = parseJSONString(jsonStr);
+    free(jsonStr);
 
-    dir = opendir(dirname);
-    if (dir != NULL) {
-        while ((entry = readdir(dir)) != NULL) {
-            if (!strequals(entry->d_name, ".") && !strequals(entry->d_name, "..")) {
-                filename = malloc(strlen(dirname) + strlen(entry->d_name) + 2);
-                sprintf(filename, "%s/%s", dirname, entry->d_name);
-                doc = createValidGPXdoc(filename, schema);
-                if (doc != NULL) {
-                    docJson = GPXtoJSON(doc);
-                    docJsonObj = parseJSONString(docJson);
-                    putStringInJSONObject(docJsonObj, "name", entry->d_name);
-                    if (!isEmptyJSONObject(docJsonObj)) {
-                        addJSONObjectToJSONArray(jsonArr, docJsonObj);
-                    }
-                    deleteGPXdoc(doc);
-                    free(docJson);
-                    deleteJSONObject(docJsonObj);
-                }
-                free(filename);
-            }
-        }
-        closedir(dir);
-    }
-    return jsonArrayToStringAndEat(jsonArr);
+    putStringInJSONObject(json, "name", name);
+
+    return jsonObjectToStringAndEat(json);
 }
 
 int validateGPXFile(char *filename, char *schema) {
@@ -2027,22 +2005,60 @@ char *getGPXRoutesAsJSON(char *filename) {
     return routes;
 }
 
+int getNumPointsInTrack(Track *track) {
+    if (track == NULL) {
+        return 0;
+    }
+    int numPoints = 0;
+    ListIterator it = createIterator(track->segments);
+    TrackSegment *seg;
+    while ((seg = (TrackSegment *)nextElement(&it)) != NULL) {
+        numPoints += getLength(seg->waypoints);
+    }
+    return numPoints;
+}
+
+char *betterTrackListToJSON(List *tracks) {
+    JSONArray *json;
+    JSONObject *trackJson;
+    ListIterator it;
+    Track *track;
+
+    json = createJSONArray();
+
+    it = createIterator(tracks);
+
+    while ((track = (Track *)nextElement(&it)) != NULL) {
+        trackJson = trackToJSONObject(track);
+        putIntInJSONObject(trackJson, "numPoints", getNumPointsInTrack(track));
+        addJSONObjectToJSONArray(json, trackJson);
+    }
+
+    return jsonArrayToStringAndEat(json);
+}
+
 char *getGPXTracksAsJSON(char *filename) {
     GPXdoc *gpxDoc = createGPXdoc(filename);
     if (gpxDoc == NULL) {
         JSONObject *json = createJSONObject();
         return jsonObjectToStringAndEat(json);
     }
-    char *tracks = trackListToJSON(gpxDoc->tracks);
+    char *tracks = betterTrackListToJSON(gpxDoc->tracks);
     deleteGPXdoc(gpxDoc);
     return tracks;
 }
 
-Route *getRouteFromWaypointsJSON(char *waypoints) {
+Route *getRouteFromWaypointsJSON(char *name, char *waypoints) {
     JSONArray *json = parseJSONArrayString(waypoints);
     Route *route = malloc(sizeof(Route));
-    route->name = malloc(5);
-    strcpy(route->name, "None");
+    if (isNullOrEmptyString(name)) {
+        route->name = malloc(5);
+        strcpy(route->name, "");
+    }
+    else {
+        route->name = malloc(strlen(name)+1);
+        strcpy(route->name, name);
+    }
     route->waypoints = initializeList(waypointToString, deleteWaypoint, compareWaypoints);
     route->otherData = initializeList(gpxDataToString, deleteGpxData, compareGpxData);
 
@@ -2059,16 +2075,16 @@ Route *getRouteFromWaypointsJSON(char *waypoints) {
     return route;
 }
 
-char *getRouteAsJSON(char *waypoints) {
-    Route *route = getRouteFromWaypointsJSON(waypoints);
+char *getRouteAsJSON(char *name, char *waypoints) {
+    Route *route = getRouteFromWaypointsJSON(name, waypoints);
     char *routeJson = routeToJSON(route);
     deleteRoute(route);
     return routeJson;
 }
 
-int addRouteToGPXFile(char *filename, char *waypoints) {
+int addRouteToGPXFile(char *filename, char *name, char *waypoints) {
     GPXdoc *gpxDoc = createGPXdoc(filename);
-    Route *route = getRouteFromWaypointsJSON(waypoints);
+    Route *route = getRouteFromWaypointsJSON(name, waypoints);
 
     if (gpxDoc == NULL || route == NULL) {
         return 0;
@@ -2081,82 +2097,46 @@ int addRouteToGPXFile(char *filename, char *waypoints) {
     return status;
 }
 
-char *getRoutesBetweenAsJSON(char *dirname, float sourceLat, float sourceLon, float destLat, float destLon) {
+char *getRoutesBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon) {
+    JSONArray *routesJson;
     GPXdoc *gpxDoc;
     List *routesList;
-    JSONArray *routesJson;
-    DIR *dir = NULL;
-    struct dirent *entry;
-    char *filename;
 
-    routesJson = createJSONArray();
+    gpxDoc = createGPXdoc(filename);
 
-    dir = opendir(dirname);
-    if (dir != NULL) {
-        while ((entry = readdir(dir)) != NULL) {
-            if (!strequals(entry->d_name, ".") && !strequals(entry->d_name, "..")) {
-                filename = malloc(strlen(dirname) + strlen(entry->d_name) + 2);
-                sprintf(filename, "%s/%s", dirname, entry->d_name);
-                gpxDoc = createGPXdoc(filename);
-                routesList = getRoutesBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
-                if (routesList != NULL) {
-                    char *routeListStr = routeListToJSON(routesList);
-                    JSONArray *routesListJson = parseJSONArrayString(routeListStr);
-                    free(routeListStr);
-                    if (getJSONArraySize(routesListJson) > 0) {
-                        for (int i = 0; i < getJSONArraySize(routesListJson); i++) {
-                            JSONObject *route = getJSONObjectFromJSONArrayAt(routesListJson, i);
-                            addJSONObjectToJSONArray(routesJson, route);
-                        }
-                    }
-                    freeList(routesList);
-                    deleteJSONArray(routesListJson);
-                }
-                deleteGPXdoc(gpxDoc);
-                free(filename);
-            }
-        }
-        closedir(dir);
+    routesList = getRoutesBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
+    if (routesList != NULL) {
+        char *routesListJson = routeListToJSON(routesList);
+        routesJson = parseJSONArrayString(routesListJson);
+        free(routesListJson);
+        freeList(routesList);
     }
+    else {
+        routesJson = createJSONArray();
+    }
+    deleteGPXdoc(gpxDoc);
+
     return jsonArrayToStringAndEat(routesJson);
 }
 
-char *getTracksBetweenAsJSON(char *dirname, float sourceLat, float sourceLon, float destLat, float destLon) {
+char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon) {
+    JSONArray *tracksJson;
     GPXdoc *gpxDoc;
     List *tracksList;
-    JSONArray *tracksJson;
-    DIR *dir = NULL;
-    struct dirent *entry;
-    char *filename;
 
-    tracksJson = createJSONArray();
+    gpxDoc = createGPXdoc(filename);
 
-    dir = opendir(dirname);
-    if (dir != NULL) {
-        while ((entry = readdir(dir)) != NULL) {
-            if (!strequals(entry->d_name, ".") && !strequals(entry->d_name, "..")) {
-                filename = malloc(strlen(dirname) + strlen(entry->d_name) + 2);
-                sprintf(filename, "%s/%s", dirname, entry->d_name);
-                gpxDoc = createGPXdoc(filename);
-                tracksList = getTracksBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
-                if (tracksList != NULL) {
-                    char *trackListStr = trackListToJSON(tracksList);
-                    JSONArray *tracksListJson = parseJSONArrayString(trackListStr);
-                    free(trackListStr);
-                    if (getJSONArraySize(tracksListJson) > 0) {
-                        for (int i = 0; i < getJSONArraySize(tracksListJson); i++) {
-                            JSONObject *track = getJSONObjectFromJSONArrayAt(tracksListJson, i);
-                            addJSONObjectToJSONArray(tracksJson, track);
-                        }
-                    }
-                    freeList(tracksList);
-                    deleteJSONArray(tracksListJson);
-                }
-                deleteGPXdoc(gpxDoc);
-                free(filename);
-            }
-        }
-        closedir(dir);
+    tracksList = getTracksBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
+    if (tracksList != NULL) {
+        char *tracksListJson = trackListToJSON(tracksList);
+        tracksJson = parseJSONArrayString(tracksListJson);
+        free(tracksListJson);
+        freeList(tracksList);
     }
+    else {
+        tracksJson = createJSONArray();
+    }
+    deleteGPXdoc(gpxDoc);
+
     return jsonArrayToStringAndEat(tracksJson);
 }

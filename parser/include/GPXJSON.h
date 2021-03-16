@@ -32,6 +32,7 @@ typedef struct jsondata {
     // The type of the data. Must be one of: TYPE_INT, TYPE_DOUBLE,
     // TYPE_BOOL, TYPE_STRING, TYPE_JSONOBJECT, TYPE_JSONARRAY
     int type;
+    bool lowprecision;
 } JSONData;
 
 /**
@@ -45,6 +46,7 @@ typedef struct jsonarrdata {
     // The type of the data. Must be one of: TYPE_INT, TYPE_DOUBLE,
     // TYPE_BOOL, TYPE_STRING, TYPE_JSONOBJECT, TYPE_JSONARRAY
     int type;
+    bool lowprecision;
 } JSONArrData;
 
 /**
@@ -72,13 +74,14 @@ typedef struct jsonarray {
 JSONObject *createJSONObject();
 char *jsonObjectToString(JSONObject *json);
 char *jsonObjectToStringAndEat(JSONObject *json);
+char *jsonObjectToStringLowPrecision(JSONObject *json);
 void deleteJSONObject(JSONObject *json);
 JSONObject *cloneJSONObject(JSONObject *json);
 JSONObject *parseJSONString(char *jsonStr);
 bool isEmptyJSONObject(JSONObject *json);
 int getJSONObjectSize(JSONObject *json);
 void putIntInJSONObject(JSONObject *json, char *name, int value);
-void putDoubleInJSONObject(JSONObject *json, char *name, double value);
+void putDoubleInJSONObject(JSONObject *json, char *name, double value, bool lowprecision);
 void putBoolInJSONObject(JSONObject *json, char *name, bool value);
 void putStringInJSONObject(JSONObject *json, char *name, char *value);
 void putJSONObjectInJSONObject(JSONObject *json, char *name, JSONObject *value);
@@ -97,13 +100,14 @@ JSONArray *getJSONArrayFromJSONObject(JSONObject *json, char *name);
 JSONArray *createJSONArray();
 char *jsonArrayToString(JSONArray *json);
 char *jsonArrayToStringAndEat(JSONArray *json);
+char *jsonArrayToStringLowPrecision(JSONArray *json);
 void deleteJSONArray(JSONArray *json);
 JSONArray *cloneJSONArray(JSONArray *json);
 JSONArray *parseJSONArrayString(char *jsonStr);
 bool isEmptyJSONArray(JSONArray *json);
 int getJSONArraySize(JSONArray *json);
 void addIntToJSONArray(JSONArray *json, int value);
-void addDoubleToJSONArray(JSONArray *json, double value);
+void addDoubleToJSONArray(JSONArray *json, double value, bool lowprecision);
 void addBoolToJSONArray(JSONArray *json, bool value);
 void addStringToJSONArray(JSONArray *json, char *value);
 void addJSONObjectToJSONArray(JSONArray *json, JSONObject *value);

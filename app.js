@@ -23,13 +23,13 @@ const xsdFile = "gpx.xsd";
 
 var libgpxparser = ffi.Library(__dirname + "/libgpxparser", {
   "validateGPXFile": ["int", ["string", "string"]],
-  "getAllValidGPXFilesAsJSON": ["string", ["string", "string"]],
+  "getValidGPXFileAsJSON": ["string", ["string", "string", "string"]],
   "getGPXFileAsJSON": ["string", ["string", "string"]],
   "getGPXRoutesAsJSON": ["string", ["string"]],
   "getGPXTracksAsJSON": ["string", ["string"]],
   "createGPXFileFromJSON": ["int", ["string", "string", "string"]],
-  "addRouteToGPXFile": ["int", ["string", "string"]],
-  "getRouteAsJSON": ["string", ["string"]],
+  "addRouteToGPXFile": ["int", ["string", "string", "string"]],
+  "getRouteAsJSON": ["string", ["string", "string"]],
   "getRoutesBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]],
   "getTracksBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]]
 });
@@ -98,9 +98,16 @@ app.get('/uploads/:name', function(req , res){
 //******************** Your code goes here ******************** 
 
 app.get('/uploads', function(req, res) {
-  let retJson = JSON.parse(libgpxparser.getAllValidGPXFilesAsJSON("uploads", xsdFile));
+  let gpxArr = [];
+  let files = fs.readdirSync("uploads")
+  for (let i = 0; i < files.length; i++) {
+    let gpxJson = JSON.parse(libgpxparser.getValidGPXFileAsJSON("uploads/" + files[i], files[i], xsdFile));
+    if (Object.keys(gpxJson).length > 0) {
+      gpxArr.push(gpxJson);
+    }
+  }
   res.send({
-    files: retJson
+    files: gpxArr
   });
 });
 
@@ -134,15 +141,16 @@ app.post('/create', function(req, res) {
 
 app.post("/addroute", function(req, res) {
   let file = req.body.file;
+  let name = req.body.name;
   let waypoints = req.body.waypoints;
-  let status = libgpxparser.addRouteToGPXFile("uploads/" + file, JSON.stringify(waypoints));
+  let status = libgpxparser.addRouteToGPXFile("uploads/" + file, name, JSON.stringify(waypoints));
   if (status == 0) {
     return res.status(422).send("Route could not be added.");
   }
   res.status(204).send(); // Success; no content
 });
 
-app.get("/findroutes", function(req, res) {
+app.get("/findpaths", function(req, res) {
   let waypoints = req.query;
   if (waypoints == null) {
     return res.status(400).send("Bad request");
@@ -155,13 +163,27 @@ app.get("/findroutes", function(req, res) {
   let startLon = parseFloat(waypoints.startLon);
   let endLat = parseFloat(waypoints.endLat);
   let endLon = parseFloat(waypoints.endLon);
-  let routes = JSON.parse(libgpxparser.getRoutesBetweenAsJSON("uploads", startLat, startLon, endLat, endLon));
-  let tracks = JSON.parse(libgpxparser.getTracksBetweenAsJSON("uploads", startLat, startLon, endLat, endLon));
-  let ret = {
+  let routes = [];
+  let tracks = [];
+  let files = fs.readdirSync("uploads");
+  for (let i = 0; i < files.length; i++) {
+    let paths = JSON.parse(libgpxparser.getRoutesBetweenAsJSON("uploads/" + files[i], startLat, startLon, endLat, endLon));
+    if (Object.keys(paths).length > 0) {
+      for (let j = 0; j < paths.length; j++) {
+        routes.push(paths[j]);
+      }
+    }
+    paths = JSON.parse(libgpxparser.getTracksBetweenAsJSON("uploads/" + files[i], startLat, startLon, endLat, endLon));
+    if (Object.keys(paths).length > 0) {
+      for (let j = 0; j < paths.length; j++) {
+        tracks.push(paths[j]);
+      }
+    }
+  }
+  res.status(200).send({
     routes: routes,
     tracks: tracks
-  };
-  res.status(200).send(ret);
+  });
 });
 
 app.listen(portNum);

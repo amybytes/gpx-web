@@ -37,7 +37,7 @@ int intLen(int n) {
  * Converts a raw value (int, double, bool, string, JSONObject, JSONArray)
  * into its most basic string representation.
  **/
-char *jsonRawToString(void *value, int type) {
+char *jsonRawToString(void *value, int type, bool lowprecision) {
     char *str = NULL;
     int size = 0;
     if (type == TYPE_INT) {
@@ -50,7 +50,13 @@ char *jsonRawToString(void *value, int type) {
         double rawData = *((double *)(value));
         size = 25;
         str = malloc(size);
-        sprintf(str, "%.1lf", rawData);
+        // sprintf(str, "%.1lf", rawData);
+        if (lowprecision) {
+            sprintf(str, "%.1lf", rawData);
+        }
+        else {
+            sprintf(str, "%lf", rawData);
+        }
     }
     else if (type == TYPE_BOOL) {
         bool rawData = *((bool *)(value));
@@ -86,7 +92,7 @@ char *jsonRawToString(void *value, int type) {
 char *jsonDataToString(void *data) {
     JSONData *jsonData = (JSONData *)data;
     char *name = jsonData->name;
-    char *rawValue = jsonRawToString(jsonData->value, jsonData->type);
+    char *rawValue = jsonRawToString(jsonData->value, jsonData->type, jsonData->lowprecision);
     int size = strlen(name) + strlen(rawValue) + 5;
     char *str = malloc(size);
     sprintf(str, "\"%s\":%s", name, rawValue);
@@ -96,7 +102,7 @@ char *jsonDataToString(void *data) {
 
 char *jsonArrDataToString(void *data) {
     JSONArrData *jsonArrData = (JSONArrData *)data;
-    return jsonRawToString(jsonArrData->value, jsonArrData->type);
+    return jsonRawToString(jsonArrData->value, jsonArrData->type, jsonArrData->lowprecision);
 }
 
 void deleteJSONData(void *data) {
@@ -181,6 +187,7 @@ JSONObject *cloneJSONObject(JSONObject *json) {
         innerData->name = malloc(strlen(jsonData->name)+1);
         strcpy(innerData->name, jsonData->name);
         innerData->type = jsonData->type;
+        innerData->lowprecision = jsonData->lowprecision;
         if (jsonData->type == TYPE_JSONOBJECT) {
             // Recursively clone the inner JSON object
             innerData->value = cloneJSONObject((JSONObject *)(jsonData->value));
@@ -207,6 +214,7 @@ JSONArray *cloneJSONArray(JSONArray *json) {
     while ((jsonArrData = (JSONArrData *)nextElement(&it)) != NULL) {
         innerData = malloc(sizeof(JSONArrData));
         innerData->type = jsonArrData->type;
+        innerData->lowprecision = jsonArrData->lowprecision;
         if (jsonArrData->type == TYPE_JSONOBJECT) {
             innerData->value = cloneJSONObject((JSONObject *)(jsonArrData->value));
         }
@@ -224,7 +232,7 @@ JSONArray *cloneJSONArray(JSONArray *json) {
     return clone;
 }
 
-void putJSONData(JSONObject *json, char *name, void *value, int type) {
+void putJSONData(JSONObject *json, char *name, void *value, int type, bool lowprecision) {
     ListIterator it;
     JSONData *tempJsonData;
     it = createIterator(json->data);
@@ -251,35 +259,36 @@ void putJSONData(JSONObject *json, char *name, void *value, int type) {
         memcpy(jsonData->value, value, size);
     }
     jsonData->type = type;
+    jsonData->lowprecision = lowprecision;
     insertBack(json->data, jsonData);
     json->numElements++;
 }
 
 void putIntInJSONObject(JSONObject *json, char *name, int value) {
-    putJSONData(json, name, (void *)(&value), TYPE_INT);
+    putJSONData(json, name, (void *)(&value), TYPE_INT, false);
 }
 
-void putDoubleInJSONObject(JSONObject *json, char *name, double value) {
-    putJSONData(json, name, (void *)(&value), TYPE_DOUBLE);
+void putDoubleInJSONObject(JSONObject *json, char *name, double value, bool lowprecision) {
+    putJSONData(json, name, (void *)(&value), TYPE_DOUBLE, lowprecision);
 }
 
 void putBoolInJSONObject(JSONObject *json, char *name, bool value) {
-    putJSONData(json, name, (void *)(&value), TYPE_BOOL);
+    putJSONData(json, name, (void *)(&value), TYPE_BOOL, false);
 }
 
 void putStringInJSONObject(JSONObject *json, char *name, char *value) {
-    putJSONData(json, name, (void *)value, TYPE_STRING);
+    putJSONData(json, name, (void *)value, TYPE_STRING, false);
 }
 
 void putJSONObjectInJSONObject(JSONObject *json, char *name, JSONObject *value) {
-    putJSONData(json, name, (void *)value, TYPE_JSONOBJECT);
+    putJSONData(json, name, (void *)value, TYPE_JSONOBJECT, false);
 }
 
 void putJSONArrayInJSONObject(JSONObject *json, char *name, JSONArray *value) {
-    putJSONData(json, name, (void *)value, TYPE_JSONARRAY);
+    putJSONData(json, name, (void *)value, TYPE_JSONARRAY, false);
 }
 
-void addJSONArray(JSONArray *json, void *value, int type) {
+void addJSONArray(JSONArray *json, void *value, int type, bool lowprecision) {
     JSONArrData *jsonArrData = malloc(sizeof(JSONArrData));
     if (type == TYPE_JSONOBJECT) {
         JSONObject *clone = cloneJSONObject((JSONObject *)value);
@@ -295,32 +304,33 @@ void addJSONArray(JSONArray *json, void *value, int type) {
         memcpy(jsonArrData->value, value, size);
     }
     jsonArrData->type = type;
+    jsonArrData->lowprecision = lowprecision;
     insertBack(json->data, jsonArrData);
     json->numElements++;
 }
 
 void addIntToJSONArray(JSONArray *json, int value) {
-    addJSONArray(json, (void *)(&value), TYPE_INT);
+    addJSONArray(json, (void *)(&value), TYPE_INT, false);
 }
 
-void addDoubleToJSONArray(JSONArray *json, double value) {
-    addJSONArray(json, (void *)(&value), TYPE_DOUBLE);
+void addDoubleToJSONArray(JSONArray *json, double value, bool lowprecision) {
+    addJSONArray(json, (void *)(&value), TYPE_DOUBLE, lowprecision);
 }
 
 void addBoolToJSONArray(JSONArray *json, bool value) {
-    addJSONArray(json, (void *)(&value), TYPE_BOOL);
+    addJSONArray(json, (void *)(&value), TYPE_BOOL, false);
 }
 
 void addStringToJSONArray(JSONArray *json, char *value) {
-    addJSONArray(json, (void *)value, TYPE_STRING);
+    addJSONArray(json, (void *)value, TYPE_STRING, false);
 }
 
 void addJSONObjectToJSONArray(JSONArray *json, JSONObject *value) {
-    addJSONArray(json, (void *)value, TYPE_JSONOBJECT);
+    addJSONArray(json, (void *)value, TYPE_JSONOBJECT, false);
 }
 
 void addJSONArrayToJSONArray(JSONArray *json, JSONArray *value) {
-    addJSONArray(json, (void *)value, TYPE_JSONARRAY);
+    addJSONArray(json, (void *)value, TYPE_JSONARRAY, false);
 }
 
 char *jsonObjectToString(JSONObject *json) {
@@ -486,13 +496,17 @@ JSONObject *parseJSONString(char *jsonStr) {
         else if (nameRead) {
             bool isNumeric = true;
             bool hasDecimal = false;
+            int precision = 0;
+            bool lowprecision = false;
             for (j = i; jsonStr[j] != '}' && jsonStr[j] != ',' && jsonStr[j] != ' ' && jsonStr[j] != '\0'; j++) {
                 if (jsonStr[j] == '.') {
                     hasDecimal = true;
+                    precision = -1; // start checking precision of floating point number
                 }
                 else if ((jsonStr[j] < '0' || jsonStr[j] > '9') && jsonStr[j] != '-') {
                     isNumeric = false;
                 }
+                precision++;
             }
             int type;
             if (!isNumeric) {
@@ -504,10 +518,15 @@ JSONObject *parseJSONString(char *jsonStr) {
             else {
                 type = TYPE_INT;
             }
+
+            if (precision <= 1) {
+                lowprecision = true;
+            }
             jsonData = malloc(sizeof(JSONData));
             jsonData->name = malloc(strlen(name)+1);
             strcpy(jsonData->name, name);
             jsonData->type = type;
+            jsonData->lowprecision = lowprecision;
             int size = getTypeSize(NULL, type);
             jsonData->value = malloc(size);
             char *data = malloc(j-i+1);
@@ -614,14 +633,18 @@ JSONArray *parseJSONArrayString(char *jsonStr) {
         else {
             bool isNumeric = true;
             bool hasDecimal = false;
+            int precision = 0;
+            bool lowprecision = false;
             // Determine length and type of data
             for (j = i; jsonStr[j] != ']' && jsonStr[j] != ',' && jsonStr[j] != ' ' && jsonStr[j] != '\0'; j++) {
                 if (jsonStr[j] == '.') {
                     hasDecimal = true;
+                    precision = -1; // start checking precision of floating point number
                 }
                 else if ((jsonStr[j] < '0' || jsonStr[j] > '9') && jsonStr[j] != '-') {
                     isNumeric = false;
                 }
+                precision++;
             }
             if (j-i == 0) {
                 continue;
@@ -636,8 +659,13 @@ JSONArray *parseJSONArrayString(char *jsonStr) {
             else {
                 type = TYPE_INT;
             }
+
+            if (precision <= 1) {
+                lowprecision = true;
+            }
             jsonArrData = malloc(sizeof(JSONData));
             jsonArrData->type = type;
+            jsonArrData->lowprecision = lowprecision;
             int size = getTypeSize(NULL, type);
             jsonArrData->value = malloc(size);
             char *data = malloc(j-i+1);

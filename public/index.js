@@ -84,15 +84,6 @@ $(document).ready(function() {
 
     $("#createForm").submit(function(e) {
         e.preventDefault();
-        // let nameEntry = document.getElementById("createGpxNameEntry");
-        // let filename = nameEntry.value;
-        // if (filename.length <= 4 || filename.match(".gpx$") === null) {
-        //     $("#createGpxNameEntry").addClass("is-invalid");
-        //     return;
-        // }
-        // else {
-        //     $("#createGpxNameEntry").removeClass("is-invalid");
-        // }
         if (!validateCreateGPXForm()) {
             return;
         }
@@ -124,6 +115,8 @@ $(document).ready(function() {
         if (!validateAddRouteForm()) {
             return;
         }
+        let nameEntry = document.getElementById("addRouteNameEntry");
+        let routeName = nameEntry.value;
         let waypoints = getAddRouteWaypoints();
         $.ajax({
             type: 'post',
@@ -132,6 +125,7 @@ $(document).ready(function() {
             url: '/addroute',
             data: JSON.stringify({
                 file: file.name,
+                name: routeName,
                 waypoints: waypoints
             }),
             success: function(data) {
@@ -153,6 +147,7 @@ $(document).ready(function() {
         console.log("Find path requested");
         e.preventDefault();
         if (!validateFindRouteForm()) {
+            $("#foundPathText").hide();
             return;
         }
         let waypoints = getFindRouteWaypoints();
@@ -161,7 +156,7 @@ $(document).ready(function() {
             type: 'get',
             dataType: 'json',
             contentType: 'application/json',
-            url: '/findroutes',
+            url: '/findpaths',
             data: {
                 startLat: waypoints.start.lat,
                 startLon: waypoints.start.lon,
@@ -169,10 +164,21 @@ $(document).ready(function() {
                 endLon: waypoints.end.lon
             },
             success: function(data) {
-                console.log("Successfully got list of found routes");
-                $("#findPathView").show();
-                updateFoundPathText(data.routes.length + data.tracks.length);
+                console.log("Successfully got list of found paths");
+                console.log(data);
+                let numPaths = 0;
+                if (data.routes.length !== undefined) {
+                    numPaths += data.routes.length;
+                }
+                if (data.tracks.length !== undefined) {
+                    numPaths += data.tracks.length;
+                }
+                updateFoundPathText(numPaths);
                 clearFindPathTable();
+                if (numPaths > 0) {
+                    $("#findPathView").show();
+                    $("#findPathTable").show();
+                }
                 let routes = data.routes;
                 let tracks = data.tracks;
                 addComponentsToFindPathTable(routes, "Route");
@@ -180,7 +186,7 @@ $(document).ready(function() {
                 window.scrollBy(0, document.body.scrollHeight);
             },
             error: function(error) {
-                console.log("Failed to get list of found routes: " + error.responseText);
+                console.log("Failed to get list of found paths: " + error.responseText);
                 alert("Error: " + error.responseText);
             }
         });
@@ -588,6 +594,7 @@ function clearGPXViewTable() {
 
 function clearFindPathTable() {
     let findPathTable = document.getElementById("findPathTable");
+    $("#findPathView").hide();
     clearTable(findPathTable);
 }
 
