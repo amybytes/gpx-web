@@ -19,7 +19,7 @@
 <body>
     <h2>File Log</h2>
     <h5 id="noFileHeader">No files</h5>
-    <div id="fileLog">
+    <div id="fileLog" class="hiddenView">
         <table id="fileLogTable">
             <tr>
                 <th>Name</th>
@@ -234,6 +234,22 @@
             <div class="form-group">
                 <p id="foundPathText" class="hiddenView"></p>
                 <input type="submit" value="Find path" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+    
+    <div id="rename" class="actionDiv">
+        <h4>Rename</h4>
+        <form ref="renameForm" id="renameForm">
+            <div class="form-group">
+                <label id="renameNewName" for="renameNewNameEntry">New name</label>
+                <input type="text" class="form-control" id="renameNewNameEntry" placeholder="new name">
+                <div class="invalid-feedback">
+                    You must enter a new name.
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Rename" class="btn btn-secondary">
             </div>
         </form>
     </div>

@@ -2140,3 +2140,121 @@ char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, f
 
     return jsonArrayToStringAndEat(tracksJson);
 }
+
+Route *getRouteByIndex(GPXdoc *gpxDoc, int index) {
+    if (gpxDoc == NULL) {
+        return NULL;
+    }
+
+    if (gpxDoc->routes == NULL) {
+        return NULL;
+    }
+
+    Route *route = NULL;
+    ListIterator it = createIterator(gpxDoc->routes);
+
+    while (index-- >= 0 && (route = (Route *)nextElement(&it)) != NULL) {}
+
+    return route;
+}
+
+Track *getTrackByIndex(GPXdoc *gpxDoc, int index) {
+    if (gpxDoc == NULL) {
+        return NULL;
+    }
+
+    if (gpxDoc->tracks == NULL) {
+        return NULL;
+    }
+
+    Track *track = NULL;
+    ListIterator it = createIterator(gpxDoc->tracks);
+
+    while (index-- >= 0 && (track = (Track*)nextElement(&it)) != NULL) {}
+
+    return track;
+}
+
+JSONObject *getOtherDataFromRouteAsJSON(Route *route) {
+    JSONObject *json = createJSONObject();
+    ListIterator it = createIterator(route->otherData);
+    GPXData *data;
+    while ((data = (GPXData *)nextElement(&it)) != NULL) {
+        putStringInJSONObject(json, data->name, data->value);
+    }
+    return json;
+}
+
+JSONObject *getOtherDataFromTrackAsJSON(Track *track) {
+    JSONObject *json = createJSONObject();
+    ListIterator it = createIterator(track->otherData);
+    GPXData *data;
+    while ((data = (GPXData *)nextElement(&it)) != NULL) {
+        putStringInJSONObject(json, data->name, data->value);
+    }
+    return json;
+}
+
+char *getOtherDataAsJSON(char *filename, int index, char *type) {
+    JSONObject *json = NULL;
+    GPXdoc *gpxDoc;
+
+    gpxDoc = createGPXdoc(filename);
+
+    if (gpxDoc == NULL) {
+        return jsonObjectToStringAndEat(json);
+    }
+
+    if (strequals(type, "Route")) {
+        Route *route = getRouteByIndex(gpxDoc, index);
+        json = getOtherDataFromRouteAsJSON(route);
+    }
+    else if (strequals(type, "Track")) {
+        Track *track = getTrackByIndex(gpxDoc, index);
+        json = getOtherDataFromTrackAsJSON(track);
+    }
+    else {
+        json = createJSONObject();
+    }
+    deleteGPXdoc(gpxDoc);
+
+    return jsonObjectToStringAndEat(json);
+}
+
+int renameRoute(char *filename, int index, char *newname) {
+    GPXdoc *gpxDoc = createGPXdoc(filename);
+    if (gpxDoc == NULL || isNullOrEmptyString(newname)) {
+        return 0;
+    }
+
+    Route *route = getRouteByIndex(gpxDoc, index);
+    if (route->name != NULL) {
+        free(route->name);
+    }
+    route->name = malloc(strlen(newname)+1);
+    strcpy(route->name, newname);
+
+    int status = writeGPXdoc(gpxDoc, filename);
+    deleteGPXdoc(gpxDoc);
+
+    return status;
+}
+
+int renameTrack(char *filename, int index, char *newname) {
+    GPXdoc *gpxDoc = createGPXdoc(filename);
+    if (gpxDoc == NULL || isNullOrEmptyString(newname)) {
+        return 0;
+    }
+
+    Track *track = getTrackByIndex(gpxDoc, index);
+    if (track->name != NULL) {
+        free(track->name);
+    }
+    track->name = malloc(strlen(newname)+1);
+    strcpy(track->name, newname);
+
+    int status = writeGPXdoc(gpxDoc, filename);
+    deleteGPXdoc(gpxDoc);
+
+    return status;
+}

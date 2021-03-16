@@ -1,5 +1,8 @@
 var files = [];
 var waypoint = [];
+var renameFileName = null;
+var renameIndex = -1;
+var renameType = null;
 
 // Put all onload AJAX calls here, and event listeners
 $(document).ready(function() {
@@ -192,6 +195,45 @@ $(document).ready(function() {
         });
     });
 
+    $("#renameForm").submit(function(e)
+    {
+        e.preventDefault();
+        if (!validateRenameForm()) {
+            return;
+        }
+        let newnameEntry = document.getElementById("renameNewNameEntry");
+        let newname = newnameEntry.value;
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            contentType: 'application/json',
+            url: '/rename',
+            data: JSON.stringify({
+                name: renameFileName,
+                index: renameIndex,
+                type: renameType,
+                newname: newname
+            }),
+            success: function (data) {
+                console.log("Component in '" + renameFileName + "' renamed successfully");
+                alert(renameType + " renamed successfully!");
+                let gpxViewTable = document.getElementById("gpxViewTable");
+                let rows = gpxViewTable.getElementsByTagName("tr");
+                for (let i = 1; i < rows.length; i++) {
+                    let entries = rows[i].getElementsByTagName("td");
+                    console.log(entries[0].textContent, renameType + " " + (renameIndex+1));
+                    if (entries[0].textContent === (renameType + " " + (renameIndex+1))) {
+                        entries[1].textContent = newname;
+                    }
+                }
+            },
+            fail: function(error) {
+                console.log("Failed to rename component in GPX file '" + renameFileName + "'");
+                alert("Error: " + error.responseText); 
+            }
+        });
+    });
+
     document.getElementById("btnAddWpt").onclick = function() {
         addWaypointElement();
     };
@@ -260,6 +302,18 @@ function updateFoundPathText(numPaths) {
 function getGPXViewSelectedFile() {
     let fileSelect = document.getElementById("gpxViewFileSelect");
     return fileSelect.options[fileSelect.selectedIndex].value;
+}
+
+function validateRenameForm() {
+    let newnameEntry = document.getElementById("renameNewNameEntry");
+    if (newnameEntry.value.length === 0) {
+        $("#renameNewNameEntry").addClass("is-invalid");
+        return false;
+    }
+    else {
+        $("#renameNewNameEntry").removeClass("is-invalid");
+        return true;
+    }
 }
 
 function getCreateGPXFile() {
@@ -467,6 +521,7 @@ function initializeFileLog() {
     if (files.length > 0) {
         $("#noFileHeader").hide();
         $("#fileLogTable").show();
+        $("#fileLog").show();
     }
     for (let i = 0; i < files.length; i++) {
         addFileToFileLog(files[i]);
@@ -495,12 +550,48 @@ function showFindPathAction() {
     showAction("#findPath");
 }
 
-function renameComponent(gpxFileName, componentName, type) {
-    console.log("Rename requested route/track '" + componentName + "' of '" + gpxFileName + "'");
+function showRenameAction() {
+    showAction("#rename");
 }
 
-function showOtherData(gpxFileName) {
-    console.log("Showing other data for '" + gpxFileName + "'");
+function renameComponent(gpxFileName, index, type) {
+    console.log("Rename requested route/track '" + index + "' of '" + gpxFileName + "'");
+    showRenameAction();
+    window.scrollBy(0, document.body.scrollHeight);
+    renameFileName = gpxFileName;
+    renameIndex = index;
+    renameType = type;
+}
+
+function showOtherData(gpxFileName, index, type) {
+    $.ajax({
+        type: 'get',
+        dataType: 'json',
+        url: '/otherdata',
+        data: {
+            name: gpxFileName,
+            index: index,
+            type: type
+        },
+        success: function (data) {
+            console.log("Other data for GPX file '" + gpxFileName + "' loaded successfully");
+            let readableData = ">>OTHER DATA<<\n";
+            let keys = Object.keys(data);
+            if (keys.length > 0) {
+                for (let i = 0; i < keys.length; i++) {
+                    readableData += keys[i] + ": " + data[keys[i]] + "\n";
+                }
+            }
+            else {
+                readableData += "No other data.";
+            }
+            alert(readableData);
+        },
+        fail: function(error) {
+            console.log("Failed to load other data for GPX file '" + gpxFileName + "'");
+            alert("Error: " + error.responseText); 
+        }
+    });
 }
 
 function addFileToFileLog(file) {
@@ -564,13 +655,13 @@ function addComponentsToTable(table, file, components, type, hasActions) {
             td = document.createElement("td");
             let btnRename = createBasicButton("Rename");
             td.appendChild(btnRename);
-            btnRename.onclick = function(e) {
-                renameComponent(file["name"], components[i]["name"], type);
+            btnRename.onclick = function() {
+                renameComponent(file["name"], i, type);
             }
             let btnViewOtherData = createBasicButton("View other data");
             td.appendChild(btnViewOtherData);
             btnViewOtherData.onclick = function() {
-                showOtherData(file["name"]);
+                showOtherData(file["name"], i, type);
             };
             row.appendChild(td);
         }

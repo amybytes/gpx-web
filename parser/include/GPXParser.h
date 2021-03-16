@@ -423,6 +423,10 @@ int addRouteToGPXFile(char *filename, char *name, char *waypoints);
 char *getRouteAsJSON(char *name, char *waypoints);
 char *getRoutesBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon);
 char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon);
+char *getOtherDataAsJSON(char *filename, int index, char *type);
+int renameRoute(char *filename, int index, char *newname);
+int renameTrack(char *filename, int index, char *newname);
+
 
 /* ******************************* List helper functions  - MUST be implemented *************************** */
 

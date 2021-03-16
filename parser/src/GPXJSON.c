@@ -232,6 +232,43 @@ JSONArray *cloneJSONArray(JSONArray *json) {
     return clone;
 }
 
+int getSpecialChar(char c) {
+    char specialChars[5] = {'\b', '\f', '\n', '\r', '\t'};
+    char replacements[5] = {'b', 'f', 'n', 'r', 't'};
+    for (int i = 0; i < sizeof(specialChars)/sizeof(char); i++) {
+        if (c == specialChars[i]) {
+            return replacements[i];
+        }
+    }
+    return -1;
+}
+
+// Remove illegal JSON string characters from a string (such as \n and \t)
+char *jsonEncode(char *str) {
+    int size = strlen(str)+1;
+    for (int i = 0; i < strlen(str); i++) {
+        if (getSpecialChar(str[i]) != -1) {
+            size++;
+        }
+    }
+    char *formatted = malloc(size);
+    int offset = 0;
+    int i;
+    char specialc;
+    for (i = 0; i < strlen(str); i++) {
+        if ((specialc = getSpecialChar(str[i])) != -1) {
+            formatted[i+offset] = '\\';
+            offset++;
+            formatted[i+offset] = specialc;
+        }
+        else {
+            formatted[i+offset] = str[i];
+        }
+    }
+    formatted[i+offset] = '\0';
+    return formatted;
+}
+
 void putJSONData(JSONObject *json, char *name, void *value, int type, bool lowprecision) {
     ListIterator it;
     JSONData *tempJsonData;
@@ -277,7 +314,9 @@ void putBoolInJSONObject(JSONObject *json, char *name, bool value) {
 }
 
 void putStringInJSONObject(JSONObject *json, char *name, char *value) {
-    putJSONData(json, name, (void *)value, TYPE_STRING, false);
+    char *encodedStr = jsonEncode(value);
+    putJSONData(json, name, (void *)encodedStr, TYPE_STRING, false);
+    free(encodedStr);
 }
 
 void putJSONObjectInJSONObject(JSONObject *json, char *name, JSONObject *value) {
@@ -322,7 +361,9 @@ void addBoolToJSONArray(JSONArray *json, bool value) {
 }
 
 void addStringToJSONArray(JSONArray *json, char *value) {
-    addJSONArray(json, (void *)value, TYPE_STRING, false);
+    char *encodedStr = jsonEncode(value);
+    addJSONArray(json, (void *)encodedStr, TYPE_STRING, false);
+    free(encodedStr);
 }
 
 void addJSONObjectToJSONArray(JSONArray *json, JSONObject *value) {

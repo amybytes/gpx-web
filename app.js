@@ -31,7 +31,10 @@ var libgpxparser = ffi.Library(__dirname + "/libgpxparser", {
   "addRouteToGPXFile": ["int", ["string", "string", "string"]],
   "getRouteAsJSON": ["string", ["string", "string"]],
   "getRoutesBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]],
-  "getTracksBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]]
+  "getTracksBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]],
+  "getOtherDataAsJSON": ["string", ["string", "int", "string"]],
+  "renameRoute": ["int", ["string", "int", "string"]],
+  "renameTrack": ["int", ["string", "int", "string"]]
 });
 
 // Send HTML at root, do not change
@@ -126,12 +129,10 @@ app.use(bodyParser.json());
 
 app.post('/create', function(req, res) {
   let filename = req.body.name;
-  console.log(req.body);
   if (filename === null) {
     return res.status(400).send("Bad request");
   }
   let status = libgpxparser.createGPXFileFromJSON(JSON.stringify(req.body), "uploads/" + filename, xsdFile);
-  console.log(status);
   if (status === 0) {
     return res.status(422).send("GPX creation failed."); // Unprocessable entity
   }
@@ -184,6 +185,32 @@ app.get("/findpaths", function(req, res) {
     routes: routes,
     tracks: tracks
   });
+});
+
+app.get('/otherdata', function(req, res) {
+  let name = req.query.name;
+  let index = req.query.index;
+  let type = req.query.type;
+  let otherData = JSON.parse(libgpxparser.getOtherDataAsJSON("uploads/" + name, index, type));
+  res.send(otherData);
+});
+
+app.post('/rename', function(req, res) {
+  let name = req.body.name;
+  let index = req.body.index;
+  let type = req.body.type;
+  let newname = req.body.newname;
+  let s = 0;
+  if (type === "Route") {
+    s = libgpxparser.renameRoute("uploads/" + name, index, newname);
+  }
+  else if (type === "Track") {
+    s = libgpxparser.renameTrack("uploads/" + name, index, newname);
+  }
+  else {
+    res.status(400).send("Bad Request");
+  }
+  res.status(204).send();
 });
 
 app.listen(portNum);
