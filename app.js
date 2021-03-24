@@ -28,13 +28,13 @@ var libgpxparser = ffi.Library(__dirname + "/parser/bin/libgpxparser", {
   "getGPXRoutesAsJSON": ["string", ["string"]],
   "getGPXTracksAsJSON": ["string", ["string"]],
   "createGPXFileFromJSON": ["int", ["string", "string", "string"]],
-  "addRouteToGPXFile": ["int", ["string", "string", "string"]],
+  "addRouteToGPXFile": ["int", ["string", "string", "string", "string"]],
   "getRouteAsJSON": ["string", ["string", "string"]],
   "getRoutesBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]],
   "getTracksBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]],
   "getOtherDataAsJSON": ["string", ["string", "int", "string"]],
-  "renameRoute": ["int", ["string", "int", "string"]],
-  "renameTrack": ["int", ["string", "int", "string"]]
+  "renameRoute": ["int", ["string", "int", "string", "string"]],
+  "renameTrack": ["int", ["string", "int", "string", "string"]]
 });
 
 // Send HTML at root, do not change
@@ -152,7 +152,7 @@ app.post("/addroute", function(req, res) {
   let file = req.body.file;
   let name = req.body.name;
   let waypoints = req.body.waypoints;
-  let status = libgpxparser.addRouteToGPXFile("uploads/" + file, name, JSON.stringify(waypoints));
+  let status = libgpxparser.addRouteToGPXFile("uploads/" + file, name, JSON.stringify(waypoints), xsdFile);
   if (status == 0) {
     return res.status(422).send("Route could not be added.");
   }
@@ -210,10 +210,10 @@ app.post('/rename', function(req, res) {
   let newname = req.body.newname;
   let s = 0;
   if (type === "Route") {
-    s = libgpxparser.renameRoute("uploads/" + name, index, newname);
+    s = libgpxparser.renameRoute("uploads/" + name, index, newname, xsdFile);
   }
   else if (type === "Track") {
-    s = libgpxparser.renameTrack("uploads/" + name, index, newname);
+    s = libgpxparser.renameTrack("uploads/" + name, index, newname, xsdFile);
   }
   else {
     res.status(400).send("Bad Request");

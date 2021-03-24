@@ -161,8 +161,7 @@ $(document).ready(function() {
         });
     });
 
-    $("#renameForm").submit(function(e)
-    {
+    $("#renameForm").submit(function(e) {
         e.preventDefault();
         if (!validateRenameForm()) {
             return;
@@ -200,8 +199,7 @@ $(document).ready(function() {
         });
     });
 
-    $("#numComponentsForm").submit(function(e)
-    {
+    $("#numComponentsForm").submit(function(e) {
         e.preventDefault();
         if (!validateNumComponentsForm()) {
             $("#getLengthText").hide();
@@ -219,6 +217,7 @@ $(document).ready(function() {
             success: function (data) {
                 console.log("Successfully got number of components with length " + len + ".");
                 updateLengthText(len, data.numRoutes, data.numTracks);
+                window.scrollBy(0, document.body.scrollHeight);
             },
             fail: function(error) {
                 console.log("Failed to get the number of components with length " + len + ".");
@@ -264,6 +263,14 @@ function setGPXViewSelectedFile(file) {
             clearGPXViewTable();
             let routes = data.routes;
             let tracks = data.tracks;
+            if (routes.length === 0 && tracks.length === 0) {
+                $("#noComponentsHeader").show();
+                $("#gpxView").hide();
+            }
+            else {
+                $("#noComponentsHeader").hide();
+                $("#gpxView").show();
+            }
             addComponentsToGPXView(file, routes, "Route");
             addComponentsToGPXView(file, tracks, "Track");
         },
@@ -323,10 +330,10 @@ function updateLengthText(len, numRoutes, numTracks) {
         lengthText.innerHTML += "There are <span style='color:" + routesColor + "'>" + numRoutes + "</span> routes and <span style='color:" + tracksColor + "'>" + numTracks;
     }
     if (numTracks === 1) {
-        lengthText.innerHTML += "</span> track with length " + len + ".";
+        lengthText.innerHTML += "</span> track with length " + len + "m.";
     }
     else {
-        lengthText.innerHTML += "</span> tracks with length " + len + ".";
+        lengthText.innerHTML += "</span> tracks with length " + len + "m.";
     }
 }
 
@@ -675,7 +682,12 @@ function addComponentsToTable(table, file, components, type, hasActions) {
         td.innerHTML = type + " " + (i+1);
         row.appendChild(td);
         td = document.createElement("td");
-        td.innerHTML = components[i]["name"];
+        if (components[i]["name"] === "None") {
+            td.innerHTML = "";
+        }
+        else {
+            td.innerHTML = components[i]["name"];
+        }
         row.appendChild(td);
         td = document.createElement("td");
         td.innerHTML = components[i]["numPoints"];

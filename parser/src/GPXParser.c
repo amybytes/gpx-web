@@ -1518,6 +1518,9 @@ List *getRoutesBetween(const GPXdoc *doc, float sourceLat, float sourceLong, flo
     while ((route = (Route *)nextElement(&it)) != NULL) {
         startPoint = getFromFront(route->waypoints);
         endPoint = getFromBack(route->waypoints);
+        if (startPoint == NULL || endPoint == NULL) {
+            continue;
+        }
         if (getWaypointPointDistance(startPoint, sourceLat, sourceLong) <= delta &&
                 getWaypointPointDistance(endPoint, destLat, destLong) <= delta) {
             insertBack(routes, route);
@@ -1960,6 +1963,10 @@ char *getValidGPXFileAsJSON(char *filename, char *name, char *schema) {
     JSONObject *json;
 
     gpxDoc = createValidGPXdoc(filename, schema);
+    if (gpxDoc == NULL) {
+        json = createJSONObject();
+        return jsonObjectToStringAndEat(json);
+    }
     char *jsonStr = GPXtoJSON(gpxDoc);
     deleteGPXdoc(gpxDoc);
     json = parseJSONString(jsonStr);
@@ -2082,7 +2089,7 @@ char *getRouteAsJSON(char *name, char *waypoints) {
     return routeJson;
 }
 
-int addRouteToGPXFile(char *filename, char *name, char *waypoints) {
+int addRouteToGPXFile(char *filename, char *name, char *waypoints, char *schema) {
     GPXdoc *gpxDoc = createGPXdoc(filename);
     Route *route = getRouteFromWaypointsJSON(name, waypoints);
 
@@ -2091,7 +2098,10 @@ int addRouteToGPXFile(char *filename, char *name, char *waypoints) {
     }
 
     addRoute(gpxDoc, route);
-    int status = writeGPXdoc(gpxDoc, filename);
+    int status = validateGPXDoc(gpxDoc, schema);
+    if (status) {
+        status = writeGPXdoc(gpxDoc, filename);
+    }
     deleteGPXdoc(gpxDoc);
 
     return status;
@@ -2221,7 +2231,7 @@ char *getOtherDataAsJSON(char *filename, int index, char *type) {
     return jsonObjectToStringAndEat(json);
 }
 
-int renameRoute(char *filename, int index, char *newname) {
+int renameRoute(char *filename, int index, char *newname, char *schema) {
     GPXdoc *gpxDoc = createGPXdoc(filename);
     if (gpxDoc == NULL || isNullOrEmptyString(newname)) {
         return 0;
@@ -2234,13 +2244,16 @@ int renameRoute(char *filename, int index, char *newname) {
     route->name = malloc(strlen(newname)+1);
     strcpy(route->name, newname);
 
-    int status = writeGPXdoc(gpxDoc, filename);
+    int status = validateGPXDoc(gpxDoc, schema);
+    if (status) {
+        status = writeGPXdoc(gpxDoc, filename);
+    }
     deleteGPXdoc(gpxDoc);
 
     return status;
 }
 
-int renameTrack(char *filename, int index, char *newname) {
+int renameTrack(char *filename, int index, char *newname, char *schema) {
     GPXdoc *gpxDoc = createGPXdoc(filename);
     if (gpxDoc == NULL || isNullOrEmptyString(newname)) {
         return 0;
@@ -2253,7 +2266,10 @@ int renameTrack(char *filename, int index, char *newname) {
     track->name = malloc(strlen(newname)+1);
     strcpy(track->name, newname);
 
-    int status = writeGPXdoc(gpxDoc, filename);
+    int status = validateGPXDoc(gpxDoc, schema);
+    if (status) {
+        status = writeGPXdoc(gpxDoc, filename);
+    }
     deleteGPXdoc(gpxDoc);
 
     return status;

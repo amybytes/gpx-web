@@ -419,13 +419,13 @@ int validateGPXFile(char *filename, char *schema);
 char *getGPXFileAsJSON(char *filename, char *name);
 char *getGPXRoutesAsJSON(char *filename);
 char *getGPXTracksAsJSON(char *filename);
-int addRouteToGPXFile(char *filename, char *name, char *waypoints);
+int addRouteToGPXFile(char *filename, char *name, char *waypoints, char *schema);
 char *getRouteAsJSON(char *name, char *waypoints);
 char *getRoutesBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon);
 char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon);
 char *getOtherDataAsJSON(char *filename, int index, char *type);
-int renameRoute(char *filename, int index, char *newname);
-int renameTrack(char *filename, int index, char *newname);
+int renameRoute(char *filename, int index, char *newname, char *schema);
+int renameTrack(char *filename, int index, char *newname, char *schema);
 
 
 /* ******************************* List helper functions  - MUST be implemented *************************** */
