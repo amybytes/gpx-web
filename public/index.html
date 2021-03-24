@@ -19,7 +19,7 @@
 <body>
     <h2>File Log</h2>
     <h5 id="noFileHeader">No files</h5>
-    <div id="fileLog" class="hiddenView">
+    <div id="fileLog" class="hiddenView log">
         <table id="fileLogTable">
             <tr>
                 <th>Name</th>
@@ -29,14 +29,6 @@
                 <th>Number of routes</th>
                 <th>Number of tracks</th>
             </tr>
-            <!-- <tr>
-                <td><a href="">test.gpx</a></td>
-                <td>1.1</td>
-                <td>test creator</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-            </tr> -->
         </table>
     </div>
 
@@ -61,7 +53,7 @@
     <select id="gpxViewFileSelect" class="form-control gpxSelect" style="width: 35%">
         <option value="" selected disabled hidden/>Select a GPX file...</option>
     </select>
-    <div id="gpxView" class="hiddenView">
+    <div id="gpxView" class="hiddenView log">
         <table id="gpxViewTable">
             <tr>
                 <th>Component</th>
@@ -71,17 +63,6 @@
                 <th>Loop</th>
                 <th>Actions</th>
             </tr>
-            <!-- <tr>
-                <td>comp</td>
-                <td>comp name</td>
-                <td>0</td>
-                <td>0</td>
-                <td>false</td>
-                <td>
-                    <input type="button" value="Rename" class="btn btn-secondary">
-                    <input type="button" value="View other data" class="btn btn-secondary">
-                </td>
-            </tr> -->
         </table>
     </div>
 
@@ -89,43 +70,11 @@
 
     <h2>Actions</h2>
     <ul style="padding: 0">
-        <!-- <input type="button" value="Upload GPX" class="btn btn-secondary" onclick="showUploadGPXAction();"> -->
         <input type="button" value="Create GPX" class="btn btn-secondary" onclick="showCreateGPXAction();">
         <input type="button" value="Add route" class="btn btn-secondary" onclick="showAddRouteAction();">
         <input type="button" value="Find path" class="btn btn-secondary" onclick="showFindPathAction();">
+        <input type="button" value="Get components with length" class="btn btn-secondary" onclick="showNumComponentsAction();">
     </ul>
-
-    <!--
-    <h3>Download test (TEMPORARY)</h3>
-    If the A3 stub is running and simple.gpx exists in the uploads/ directory on the server, then clicking on the link below will download it from the server.<br>
-    <a href="testCard.vcf" download ">simple.gpx</a>
-    <p></p>
-
-    <hr>
-    <div id="blah">I am blah</div>
-    <hr>
-    <form ref='someform'
-          id='someform'>
-          <div class="form-group">
-                <label for="entryBox">Last Name</label>
-                <input type="text" class="form-control" id="entryBox" value="Value" placeholder="Placeholder">
-          </div>
-        <div class="form-group">
-            <input type='submit' class="btn btn-secondary">
-        </div>
-    </form>
-
-    <form ref='uploadForm'
-		id='uploadForm'
-      action='/upload'
-      method='post'
-      encType="multipart/form-data">
-      <div class="form-group">
-      	<input type="file" name="uploadFile" class="btn btn-secondary">
-      	<input type='submit' value='Upload' class="btn btn-secondary">
-      </div>
-    </form>
--->
 
     <div id="createGpx" class="actionDiv">
         <h4>Create GPX File</h4>
@@ -190,7 +139,7 @@
     <div id="findPath" class="actionDiv">
         <h4>Find Path</h4>
         <!-- Output table -->
-        <div id="findPathView" class="hiddenView">
+        <div id="findPathView" class="hiddenView log">
             <table id="findPathTable">
                 <tr>
                     <th>Component</th>
@@ -198,15 +147,7 @@
                     <th>Number of points</th>
                     <th>Length</th>
                     <th>Loop</th>
-                    <!-- <th>Actions</th> -->
                 </tr>
-                <!-- <tr>
-                    <td>comp</td>
-                    <td>comp name</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>false</td>
-                </tr> -->
             </table>
         </div>
         <form ref="findPathForm" id="findPathForm">
@@ -249,6 +190,23 @@
                 </div>
             </div>
             <div class="form-group">
+                <input type="submit" value="Rename" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <div id="numComponents" class="actionDiv">
+        <h4>Get Components with Length</h4>
+        <form ref="numComponentsForm" id="numComponentsForm">
+            <div class="form-group">
+                <label id="numComponentsLength" for="numComponentsLengthEntry">Length</label>
+                <input type="text" class="form-control" id="numComponentsLengthEntry" placeholder="length">
+                <div class="invalid-feedback">
+                    You must enter a length.
+                </div>
+            </div>
+            <div class="form-group">
+                <p id="getLengthText" class="hiddenView"></p>
                 <input type="submit" value="Rename" class="btn btn-secondary">
             </div>
         </form>

@@ -21,7 +21,7 @@ const portNum = process.argv[2];
 
 const xsdFile = "gpx.xsd";
 
-var libgpxparser = ffi.Library(__dirname + "/libgpxparser", {
+var libgpxparser = ffi.Library(__dirname + "/parser/bin/libgpxparser", {
   "validateGPXFile": ["int", ["string", "string"]],
   "getValidGPXFileAsJSON": ["string", ["string", "string", "string"]],
   "getGPXFileAsJSON": ["string", ["string", "string"]],
@@ -127,10 +127,18 @@ app.get('/gpxinfo', function(req, res) {
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 
+function isGPXNameUnique(name) {
+  let files = fs.readdirSync("uploads");
+  return files.indexOf(name) === -1;
+}
+
 app.post('/create', function(req, res) {
   let filename = req.body.name;
   if (filename === null) {
     return res.status(400).send("Bad request");
+  }
+  if (!isGPXNameUnique(filename)) {
+    return res.status(422).send("A GPX file with that name already exists.");
   }
   let status = libgpxparser.createGPXFileFromJSON(JSON.stringify(req.body), "uploads/" + filename, xsdFile);
   if (status === 0) {
@@ -211,6 +219,34 @@ app.post('/rename', function(req, res) {
     res.status(400).send("Bad Request");
   }
   res.status(204).send();
+});
+
+app.get('/gpxinfo/length', function(req, res) {
+  let len = req.query.len;
+  let files = fs.readdirSync("uploads");
+  let numRoutes = 0;
+  let numTracks = 0;
+  if (len === undefined) {
+    return res.status(422).send("Length is invalid");
+  }
+  for (let i = 0; i < files.length; i++) {
+    let routes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + files[i]));
+    let tracks = JSON.parse(libgpxparser.getGPXTracksAsJSON("uploads/" + files[i]));
+    for (let j = 0; j < routes.length; j++) {
+      if (Math.abs(routes[j].len - len) <= 10) {
+        numRoutes++;
+      }
+    }
+    for (let j = 0; j < tracks.length; j++) {
+      if (Math.abs(tracks[j].len - len) <= 10) {
+        numTracks++;
+      }
+    }
+  }
+  res.status(200).send({
+    numRoutes: numRoutes,
+    numTracks: numTracks
+  });
 });
 
 app.listen(portNum);

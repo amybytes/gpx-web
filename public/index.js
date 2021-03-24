@@ -7,41 +7,7 @@ var renameType = null;
 // Put all onload AJAX calls here, and event listeners
 $(document).ready(function() {
     initializeAddRouteWaypoints();
-    // let file = {"name": "test.gpx", "version": 1.1, "creator": "Ethan Rowan", "numWaypoints": 3, "numRoutes": 1, "numTracks": 1};
-    // // setGPXViewFile(file);
-    // addFileToFileLog(file);
-    // let routes = [{"name": "testroute", "numPoints": 5, "len": 123, "loop": true},{"name": "testroute2", "numPoints": 7, "len": 456, "loop": false}];
-    // let tracks = [{"name": "testtrack", "numPoints": 5, "len": 123, "loop": true},{"name": "testtrack2", "numPoints": 7, "len": 456, "loop": false}];
-    // addComponentsToGPXView(file, routes, "Route");
-    // addComponentsToGPXView(file, tracks, "Track");
-
-    // // On page-load AJAX Example
-    // $.ajax({
-    //     type: 'get',            //Request type
-    //     dataType: 'json',       //Data type - we will use JSON for almost everything 
-    //     url: '/endpoint1',   //The server endpoint we are connecting to
-    //     data: {
-    //         stuff: "Value 1",
-    //         junk: "Value 2"
-    //     },
-    //     success: function (data) {
-    //         /*  Do something with returned object
-    //             Note that what we get is an object, not a string, 
-    //             so we do not need to parse it on the server.
-    //             JavaScript really does handle JSONs seamlessly
-    //         */
-    //         $('#blah').html("On page load, received string '"+data.stuff+"' from server");
-    //         //We write the object to the console to show that the request was successful
-    //         console.log(data); 
-
-    //     },
-    //     fail: function(error) {
-    //         // Non-200 return, do something with error
-    //         $('#blah').html("On page load, received error from server");
-    //         console.log(error); 
-    //     }
-    // });
-
+    
     /* Request all GPX files, then initialize file log 
     and drop down menus */
     $.ajax({
@@ -234,6 +200,33 @@ $(document).ready(function() {
         });
     });
 
+    $("#numComponentsForm").submit(function(e)
+    {
+        e.preventDefault();
+        if (!validateNumComponentsForm()) {
+            $("#getLengthText").hide();
+            return;
+        }
+        let lengthEntry = document.getElementById("numComponentsLengthEntry");
+        let len = lengthEntry.value;
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: '/gpxinfo/length',
+            data: {
+                len: len
+            },
+            success: function (data) {
+                console.log("Successfully got number of components with length " + len + ".");
+                updateLengthText(len, data.numRoutes, data.numTracks);
+            },
+            fail: function(error) {
+                console.log("Failed to get the number of components with length " + len + ".");
+                alert("Error: " + error.responseText);
+            }
+        });
+    });
+
     document.getElementById("btnAddWpt").onclick = function() {
         addWaypointElement();
     };
@@ -296,6 +289,44 @@ function updateFoundPathText(numPaths) {
         else {
             foundPathText.innerText = "Found " + numPaths + " paths";
         }
+    }
+}
+
+function validateNumComponentsForm() {
+    let lengthEntry = document.getElementById("numComponentsLengthEntry");
+    if (!lengthEntry.value.match("^[0-9]+[.]?[0-9]*$")) {
+        $("#numComponentsLengthEntry").addClass("is-invalid");
+        return false;
+    }
+    else {
+        $("#numComponentsLengthEntry").removeClass("is-invalid");
+        return true;
+    }
+}
+
+function updateLengthText(len, numRoutes, numTracks) {
+    let lengthText = document.getElementById("getLengthText");
+    $("#getLengthText").show();
+    let routesColor = "green";
+    let tracksColor = "green";
+    if (numRoutes === 0) {
+        routesColor = "red";
+    }
+    if (numTracks === 0) {
+        tracksColor = "red";
+    }
+    lengthText.innerHTML = "";
+    if (numRoutes === 1) {
+        lengthText.innerHTML += "There is <span style='color:" + routesColor + "'>" + numRoutes + "</span> route and <span style='color:" + tracksColor + "'>" + numTracks;
+    }
+    else {
+        lengthText.innerHTML += "There are <span style='color:" + routesColor + "'>" + numRoutes + "</span> routes and <span style='color:" + tracksColor + "'>" + numTracks;
+    }
+    if (numTracks === 1) {
+        lengthText.innerHTML += "</span> track with length " + len + ".";
+    }
+    else {
+        lengthText.innerHTML += "</span> tracks with length " + len + ".";
     }
 }
 
@@ -552,6 +583,10 @@ function showFindPathAction() {
 
 function showRenameAction() {
     showAction("#rename");
+}
+
+function showNumComponentsAction() {
+    showAction("#numComponents");
 }
 
 function renameComponent(gpxFileName, index, type) {
