@@ -43,6 +43,11 @@ $(document).ready(function() {
                 console.log("Successfully uploaded file");
                 alert("Upload successful!");
                 addNewFile(data);
+                if (files.length > 0) {
+                    $("#noFileHeader").hide();
+                    $("#fileLogTable").show();
+                    $("#fileLog").show();
+                }
             },
             error: function(error) {
                 console.log("Failed to upload file: " + error.responseText);

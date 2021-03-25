@@ -40,7 +40,7 @@
             method="post"
             encType="multipart/form-data">
             <div class="form-group">
-                <input type="file" accept=".gpx" id="uploadFile" name="uploadFile" class="btn btn-secondary">
+                <input type="file" accept=".gpx" id="uploadFile" name="uploadFile" class="btn btn-secondary" autocomplete="off">
                 <input type="submit" value='Upload' class="btn btn-secondary">
             </div>
         </form>
@@ -50,7 +50,7 @@
 
     <h2>GPX View</h2>
     <h5 id="noFileSelectedHeader">No file selected</h5>
-    <select id="gpxViewFileSelect" class="form-control gpxSelect" style="width: 35%">
+    <select id="gpxViewFileSelect" class="form-control gpxSelect" style="width: 35%" autocomplete="off">
         <option value="" selected disabled hidden/>Select a GPX file...</option>
     </select>
     <h5 id="noComponentsHeader" class="hiddenView" style="margin-top: 5px">No components</h5>
@@ -82,21 +82,21 @@
         <form ref="createForm" id="createForm">
             <div class="form-group">
                 <label id="createGpxName" for="createGpxNameEntry">File name</label>
-                <input type="text" class="form-control" id="createGpxNameEntry" placeholder="new.gpx">
+                <input type="text" class="form-control" id="createGpxNameEntry" placeholder="new.gpx" autocomplete="off">
                 <div class="invalid-feedback">
                     You must enter a file name ending in '.gpx'.
                 </div>
             </div>
             <div class="form-group">
                 <label id="createGpxVersion" for="createGpxVersionEntry">Version</label>
-                <input type="text" class="form-control" id="createGpxVersionEntry" placeholder="version">
+                <input type="text" class="form-control" id="createGpxVersionEntry" placeholder="version" autocomplete="off">
                 <div class="invalid-feedback">
                     You must enter a version number.
                 </div>
             </div>
             <div class="form-group">
                 <label id="createGpxCreator" for="createGpxCreatorEntry">Creator</label>
-                <input type="text" class="form-control" id="createGpxCreatorEntry" placeholder="creator">
+                <input type="text" class="form-control" id="createGpxCreatorEntry" placeholder="creator" autocomplete="off">
                 <div class="invalid-feedback">
                     You must enter a creator name.
                 </div>
@@ -112,7 +112,7 @@
         <form ref="addRouteForm" id="addRouteForm">
             <!-- GPX file selector -->
             <div class="form-group">
-                <select id="addRouteFileSelect" class="form-control gpxSelect" style="width: 35%">
+                <select id="addRouteFileSelect" class="form-control gpxSelect" style="width: 35%" autocomplete="off">
                     <option value="" class="dropdown-item" selected disabled hidden/>Select a GPX file...</option>
                 </select>
                 <div class="invalid-feedback">
@@ -121,7 +121,7 @@
             </div>
             <div class="form-group">
                 <label id="addRouteName" for="addRouteNameEntry">Route name</label>
-                <input type="text" class="form-control" id="addRouteNameEntry" placeholder="default: None">
+                <input type="text" class="form-control" id="addRouteNameEntry" placeholder="default: None" autocomplete="off">
             </div>
             <!-- Waypoints grid -->
             <label id="addRouteName">Waypoints</label>
@@ -157,19 +157,19 @@
                 <h5>Start point</h5>
                 <div class="row">
                     <div class="col">
-                        <input type="text" id="startLatInput" class="form-control gridInput" placeholder="latitude">
+                        <input type="text" id="startLatInput" class="form-control gridInput" placeholder="latitude" autocomplete="off">
                     </div>
                     <div class="col">
-                        <input type="text" id="startLonInput" class="form-control gridInput" placeholder="longitude">
+                        <input type="text" id="startLonInput" class="form-control gridInput" placeholder="longitude" autocomplete="off">
                     </div>
                 </div>
                 <h5>End point</h5>
                 <div class="row">
                     <div class="col">
-                        <input type="text" id="endLatInput" class="form-control gridInput" placeholder="latitude">
+                        <input type="text" id="endLatInput" class="form-control gridInput" placeholder="latitude" autocomplete="off">
                     </div>
                     <div class="col">
-                        <input type="text" id="endLonInput" class="form-control gridInput" placeholder="longitude">
+                        <input type="text" id="endLonInput" class="form-control gridInput" placeholder="longitude" autocomplete="off">
                     </div>
                 </div>
             </div>
@@ -185,7 +185,7 @@
         <form ref="renameForm" id="renameForm">
             <div class="form-group">
                 <label id="renameNewName" for="renameNewNameEntry">New name</label>
-                <input type="text" class="form-control" id="renameNewNameEntry" placeholder="new name">
+                <input type="text" class="form-control" id="renameNewNameEntry" placeholder="new name" autocomplete="off">
                 <div class="invalid-feedback">
                     You must enter a new name.
                 </div>
@@ -201,7 +201,7 @@
         <form ref="numComponentsForm" id="numComponentsForm">
             <div class="form-group">
                 <label id="numComponentsLength" for="numComponentsLengthEntry">Length</label>
-                <input type="text" class="form-control" id="numComponentsLengthEntry" placeholder="length">
+                <input type="text" class="form-control" id="numComponentsLengthEntry" placeholder="length" autocomplete="off">
                 <div class="invalid-feedback">
                     You must enter a length.
                 </div>
