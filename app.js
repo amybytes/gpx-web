@@ -30,8 +30,8 @@ var libgpxparser = ffi.Library(__dirname + "/parser/bin/libgpxparser", {
   "createGPXFileFromJSON": ["int", ["string", "string", "string"]],
   "addRouteToGPXFile": ["int", ["string", "string", "string", "string"]],
   "getRouteAsJSON": ["string", ["string", "string"]],
-  "getRoutesBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]],
-  "getTracksBetweenAsJSON": ["string", ["string", "float", "float", "float", "float"]],
+  "getRoutesBetweenAsJSON": ["string", ["string", "float", "float", "float", "float", "float"]],
+  "getTracksBetweenAsJSON": ["string", ["string", "float", "float", "float", "float", "float"]],
   "getOtherDataAsJSON": ["string", ["string", "int", "string"]],
   "renameRoute": ["int", ["string", "int", "string", "string"]],
   "renameTrack": ["int", ["string", "int", "string", "string"]]
@@ -172,20 +172,23 @@ app.get("/findpaths", function(req, res) {
   let startLon = parseFloat(waypoints.startLon);
   let endLat = parseFloat(waypoints.endLat);
   let endLon = parseFloat(waypoints.endLon);
+  let delta = req.query.delta;
   let routes = [];
   let tracks = [];
   let files = fs.readdirSync("uploads");
   for (let i = 0; i < files.length; i++) {
-    let paths = JSON.parse(libgpxparser.getRoutesBetweenAsJSON("uploads/" + files[i], startLat, startLon, endLat, endLon));
-    if (Object.keys(paths).length > 0) {
-      for (let j = 0; j < paths.length; j++) {
-        routes.push(paths[j]);
+    if (libgpxparser.validateGPXFile("uploads/" + files[i], xsdFile)) {
+      let paths = JSON.parse(libgpxparser.getRoutesBetweenAsJSON("uploads/" + files[i], startLat, startLon, endLat, endLon, delta));
+      if (Object.keys(paths).length > 0) {
+        for (let j = 0; j < paths.length; j++) {
+          routes.push(paths[j]);
+        }
       }
-    }
-    paths = JSON.parse(libgpxparser.getTracksBetweenAsJSON("uploads/" + files[i], startLat, startLon, endLat, endLon));
-    if (Object.keys(paths).length > 0) {
-      for (let j = 0; j < paths.length; j++) {
-        tracks.push(paths[j]);
+      paths = JSON.parse(libgpxparser.getTracksBetweenAsJSON("uploads/" + files[i], startLat, startLon, endLat, endLon, delta));
+      if (Object.keys(paths).length > 0) {
+        for (let j = 0; j < paths.length; j++) {
+          tracks.push(paths[j]);
+        }
       }
     }
   }
@@ -223,6 +226,7 @@ app.post('/rename', function(req, res) {
 
 app.get('/gpxinfo/length', function(req, res) {
   let len = req.query.len;
+  let delta = req.query.delta;
   let files = fs.readdirSync("uploads");
   let numRoutes = 0;
   let numTracks = 0;
@@ -230,16 +234,18 @@ app.get('/gpxinfo/length', function(req, res) {
     return res.status(422).send("Length is invalid");
   }
   for (let i = 0; i < files.length; i++) {
-    let routes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + files[i]));
-    let tracks = JSON.parse(libgpxparser.getGPXTracksAsJSON("uploads/" + files[i]));
-    for (let j = 0; j < routes.length; j++) {
-      if (Math.abs(routes[j].len - len) <= 10) {
-        numRoutes++;
+    if (libgpxparser.validateGPXFile("uploads/" + files[i], xsdFile)) {
+      let routes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + files[i]));
+      let tracks = JSON.parse(libgpxparser.getGPXTracksAsJSON("uploads/" + files[i]));
+      for (let j = 0; j < routes.length; j++) {
+        if (Math.abs(routes[j].len - len) <= delta) {
+          numRoutes++;
+        }
       }
-    }
-    for (let j = 0; j < tracks.length; j++) {
-      if (Math.abs(tracks[j].len - len) <= 10) {
-        numTracks++;
+      for (let j = 0; j < tracks.length; j++) {
+        if (Math.abs(tracks[j].len - len) <= delta) {
+          numTracks++;
+        }
       }
     }
   }

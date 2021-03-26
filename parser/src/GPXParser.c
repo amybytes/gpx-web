@@ -2107,7 +2107,7 @@ int addRouteToGPXFile(char *filename, char *name, char *waypoints, char *schema)
     return status;
 }
 
-char *getRoutesBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon) {
+char *getRoutesBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon, float delta) {
     JSONArray *routesJson;
     GPXdoc *gpxDoc;
     List *routesList;
@@ -2129,7 +2129,7 @@ char *getRoutesBetweenAsJSON(char *filename, float sourceLat, float sourceLon, f
     return jsonArrayToStringAndEat(routesJson);
 }
 
-char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon) {
+char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, float destLat, float destLon, float delta) {
     JSONArray *tracksJson;
     GPXdoc *gpxDoc;
     List *tracksList;

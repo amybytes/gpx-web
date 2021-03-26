@@ -174,6 +174,13 @@
                 </div>
             </div>
             <div class="form-group">
+                <h5>Tolerance</h5>
+                <input type="text" id="toleranceInput" class="form-control gridInput" placeholder="tolerance" autocomplete="off">
+                <div class="invalid-feedback">
+                    You must enter a non-negative tolerance.
+                </div>
+            </div>
+            <div class="form-group">
                 <p id="foundPathText" class="hiddenView"></p>
                 <input type="submit" value="Find path" class="btn btn-secondary">
             </div>
@@ -204,6 +211,13 @@
                 <input type="text" class="form-control" id="numComponentsLengthEntry" placeholder="length" autocomplete="off">
                 <div class="invalid-feedback">
                     You must enter a length.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="numComponentsTolerance" for="numComponentsToleranceEntry">Tolerance</label>
+                <input type="text" id="numComponentsToleranceEntry" class="form-control gridInput" placeholder="tolerance" autocomplete="off">
+                <div class="invalid-feedback">
+                    You must enter a non-negative tolerance.
                 </div>
             </div>
             <div class="form-group">

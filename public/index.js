@@ -59,6 +59,7 @@ $(document).ready(function() {
     $("#createForm").submit(function(e) {
         e.preventDefault();
         if (!validateCreateGPXForm()) {
+            alert("Failed to create the file. Please check your input.");
             return;
         }
         let file = getCreateGPXFile();
@@ -87,11 +88,14 @@ $(document).ready(function() {
         let fileSelect = document.getElementById("addRouteFileSelect");
         let file = files[fileSelect.selectedIndex-1];
         if (!validateAddRouteForm()) {
+            alert("Failed to add route. Please check your input.");
             return;
         }
         let nameEntry = document.getElementById("addRouteNameEntry");
         let routeName = nameEntry.value;
         let waypoints = getAddRouteWaypoints();
+        let toleranceEntry = document.getElementById("toleranceInput");
+        let delta = toleranceEntry.value;
         $.ajax({
             type: 'post',
             dataType: 'json',
@@ -100,7 +104,8 @@ $(document).ready(function() {
             data: JSON.stringify({
                 file: file.name,
                 name: routeName,
-                waypoints: waypoints
+                waypoints: waypoints,
+                delta: delta
             }),
             success: function(data) {
                 console.log("Successfully added route to '" + file.name + "'");
@@ -122,6 +127,7 @@ $(document).ready(function() {
         e.preventDefault();
         if (!validateFindRouteForm()) {
             $("#foundPathText").hide();
+            alert("Failed to find paths. Please check your input.");
             return;
         }
         let waypoints = getFindRouteWaypoints();
@@ -169,6 +175,7 @@ $(document).ready(function() {
     $("#renameForm").submit(function(e) {
         e.preventDefault();
         if (!validateRenameForm()) {
+            alert("Failed to rename. Please check your input.");
             return;
         }
         let newnameEntry = document.getElementById("renameNewNameEntry");
@@ -208,16 +215,20 @@ $(document).ready(function() {
         e.preventDefault();
         if (!validateNumComponentsForm()) {
             $("#getLengthText").hide();
+            alert("Failed to get components. Please check your input.");
             return;
         }
         let lengthEntry = document.getElementById("numComponentsLengthEntry");
         let len = lengthEntry.value;
+        let toleranceEntry = document.getElementById("numComponentsToleranceEntry");
+        let delta = toleranceEntry.value;
         $.ajax({
             type: 'get',
             dataType: 'json',
             url: '/gpxinfo/length',
             data: {
-                len: len
+                len: len,
+                delta: delta
             },
             success: function (data) {
                 console.log("Successfully got number of components with length " + len + ".");
@@ -305,15 +316,24 @@ function updateFoundPathText(numPaths) {
 }
 
 function validateNumComponentsForm() {
+    let valid = true;
     let lengthEntry = document.getElementById("numComponentsLengthEntry");
+    let toleranceEntry = document.getElementById("numComponentsToleranceEntry");
     if (!lengthEntry.value.match("^[0-9]+[.]?[0-9]*$")) {
         $("#numComponentsLengthEntry").addClass("is-invalid");
-        return false;
+        valid = false;
     }
     else {
         $("#numComponentsLengthEntry").removeClass("is-invalid");
-        return true;
     }
+
+    if (!toleranceEntry.value.match("^[0-9]+[.]?[0-9]*$")) {
+        $("#numComponentsToleranceEntry").addClass("is-invalid");
+    }
+    else {
+        $("#numComponentsToleranceEntry").removeClass("is-invalid");
+    }
+    return valid;
 }
 
 function updateLengthText(len, numRoutes, numTracks) {
@@ -424,16 +444,24 @@ function validateFindRouteForm() {
     let startLonInput = document.getElementById("startLonInput");
     let endLatInput = document.getElementById("endLatInput");
     let endLonInput = document.getElementById("endLonInput");
-    if (!validateWaypointInput(startLatInput)) {
+    let toleranceInput = document.getElementById("toleranceInput");
+    if (!validateWaypointInput(startLatInput, "latitude")) {
         valid = false;
     }
-    if (!validateWaypointInput(startLonInput)) {
+    if (!validateWaypointInput(startLonInput, "longitude")) {
         valid = false;
     }
-    if (!validateWaypointInput(endLatInput)) {
+    if (!validateWaypointInput(endLatInput, "latitude")) {
         valid = false;
     }
-    if (!validateWaypointInput(endLonInput)) {
+    if (!validateWaypointInput(endLonInput, "longitude")) {
+        valid = false;
+    }
+    if (toleranceInput.value.match("^[0-9]+[.]?[0-9]*$")) {
+        $("#toleranceInput").removeClass("is-invalid");
+    }
+    else {
+        $("#toleranceInput").addClass("is-invalid");
         valid = false;
     }
     return valid;
@@ -465,17 +493,26 @@ function validateAddRouteForm() {
     let latitudeInputs = document.getElementsByClassName("latitudeInput");
     let longitudeInputs = document.getElementsByClassName("longitudeInput");
     for (let i = 0; i < latitudeInputs.length; i++) {
-        if (!validateWaypointInput(latitudeInputs[i])) {
+        if (!validateWaypointInput(latitudeInputs[i], "latitude")) {
             valid = false;
         }
-        if (!validateWaypointInput(longitudeInputs[i])) {
+        if (!validateWaypointInput(longitudeInputs[i], "longitude")) {
             valid = false;
         }
     }
     return valid;
 }
 
-function validateWaypointInput(input) {
+function validateWaypointInput(input, type) {
+    if (type == "latitude" && (input.value < -90 || input.value > 90)) {
+        input.classList.add("is-invalid");
+        return false;
+    }
+    else if (type == "longitude" && (input.value < -180 || input.value > 180)) {
+        input.classList.add("is-invalid");
+        return false;
+    }
+
     // Use regex to validate for floating point numbers
     if (!input.value.match("^-?[0-9]+[.]?[0-9]*$")) {
         input.classList.add("is-invalid");
