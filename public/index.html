@@ -71,10 +71,10 @@
 
     <h2>Actions</h2>
     <ul style="padding: 0">
-        <input type="button" value="Create GPX" class="btn btn-secondary" onclick="showCreateGPXAction();">
-        <input type="button" value="Add route" class="btn btn-secondary" onclick="showAddRouteAction();">
-        <input type="button" value="Find path" class="btn btn-secondary" onclick="showFindPathAction();">
-        <input type="button" value="Get components with length" class="btn btn-secondary" onclick="showNumComponentsAction();">
+        <input type="button" value="Create GPX" class="btn btn-secondary gridInput" onclick="showCreateGPXAction();">
+        <input type="button" value="Add route" class="btn btn-secondary gridInput" onclick="showAddRouteAction();">
+        <input type="button" value="Find path" class="btn btn-secondary gridInput" onclick="showFindPathAction();">
+        <input type="button" value="Get components with length" class="btn btn-secondary gridInput" onclick="showNumComponentsAction();">
     </ul>
 
     <div id="createGpx" class="actionDiv">
@@ -225,6 +225,58 @@
                 <input type="submit" value="Rename" class="btn btn-secondary">
             </div>
         </form>
+    </div>
+
+    <hr>
+
+    <h2>Database</h2>
+    <div id="dbActions" class="hiddenView">
+        <ul style="padding: 0">
+            <input type="button" value="Store all files" class="btn btn-secondary" onclick="showStoreAllAction();">
+            <input type="button" value="Clear all data" class="btn btn-secondary" onclick="showClearAllAction();">
+            <!-- <input type="button" value="Execute Query" class="btn btn-secondary" onclick="showExecuteQueryAction();"> -->
+        </ul>
+    </div>
+
+    <div id="login" class="dbActionDiv">
+        <h4>Login</h4>
+        <form ref="dbLoginForm" id="dbLoginForm">
+            <div class="form-group">
+                <label id="loginUsername" for="loginUsernameEntry">Username</label>
+                <input type="text" class="form-control" id="loginUsernameEntry" placeholder="username" autocomplete="off">
+                <div class="invalid-feedback">
+                    You must enter a username.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="loginPassword" for="loginPasswordEntry">Password</label>
+                <input type="text" class="form-control" id="loginPasswordEntry" placeholder="password" autocomplete="off">
+                <div class="invalid-feedback">
+                    You must enter a password.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="loginDatabaseName" for="loginDatabaseNameEntry">Database name</label>
+                <input type="text" class="form-control" id="loginDatabaseNameEntry" placeholder="database name" autocomplete="off">
+                <div class="invalid-feedback">
+                    You must enter a database name.
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Login" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <div id="queries" class="dbActionDiv">
+        <h4>Queries</h4>
+        <ul style="padding: 0">
+            <input type="button" value="Get all routes" class="btn btn-secondary gridInput" onclick="showStoreAllAction();">
+            <input type="button" value="Get routes from file" class="btn btn-secondary gridInput" onclick="showClearAllAction();">
+            <input type="button" value="Get all route points" class="btn btn-secondary gridInput" onclick="showExecuteQueryAction();">
+            <input type="button" value="Get all points from file" class="btn btn-secondary gridInput" onclick="showExecuteQueryAction();">
+            <input type="button" value="Get shortest/longest routes from file" class="btn btn-secondary gridInput" onclick="showExecuteQueryAction();">
+        </ul>
     </div>
 
     <!-- Leave me at the bottom of body -->

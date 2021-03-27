@@ -426,6 +426,7 @@ char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, f
 char *getOtherDataAsJSON(char *filename, int index, char *type);
 int renameRoute(char *filename, int index, char *newname, char *schema);
 int renameTrack(char *filename, int index, char *newname, char *schema);
+char *getRouteWaypointsAsJSON(char *filename, int routeIndex);
 
 
 /* ******************************* List helper functions  - MUST be implemented *************************** */

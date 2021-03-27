@@ -34,7 +34,8 @@ var libgpxparser = ffi.Library(__dirname + "/parser/bin/libgpxparser", {
   "getTracksBetweenAsJSON": ["string", ["string", "float", "float", "float", "float", "float"]],
   "getOtherDataAsJSON": ["string", ["string", "int", "string"]],
   "renameRoute": ["int", ["string", "int", "string", "string"]],
-  "renameTrack": ["int", ["string", "int", "string", "string"]]
+  "renameTrack": ["int", ["string", "int", "string", "string"]],
+  "getRouteWaypointsAsJSON": ["string", ["string", "int"]]
 });
 
 // Send HTML at root, do not change
@@ -148,13 +149,17 @@ app.post('/create', function(req, res) {
   res.status(200).send(fileJson); // GPX creation successful!
 });
 
-app.post("/addroute", function(req, res) {
+app.post("/addroute", async function(req, res) {
   let file = req.body.file;
   let name = req.body.name;
   let waypoints = req.body.waypoints;
+  let auth = req.body.auth;
   let status = libgpxparser.addRouteToGPXFile("uploads/" + file, name, JSON.stringify(waypoints), xsdFile);
   if (status == 0) {
     return res.status(422).send("Route could not be added.");
+  }
+  if (auth !== undefined) {
+    await addRouteToDBFile(file, auth);
   }
   res.status(204).send(); // Success; no content
 });
@@ -211,6 +216,7 @@ app.post('/rename', function(req, res) {
   let index = req.body.index;
   let type = req.body.type;
   let newname = req.body.newname;
+  let auth = req.body.auth;
   let s = 0;
   if (type === "Route") {
     s = libgpxparser.renameRoute("uploads/" + name, index, newname, xsdFile);
@@ -220,6 +226,9 @@ app.post('/rename', function(req, res) {
   }
   else {
     res.status(400).send("Bad Request");
+  }
+  if (s && auth !== undefined) {
+    renameDBRoute(name, auth, index, newname);
   }
   res.status(204).send();
 });
@@ -253,6 +262,214 @@ app.get('/gpxinfo/length', function(req, res) {
     numRoutes: numRoutes,
     numTracks: numTracks
   });
+});
+
+const mysql = require('mysql2/promise');
+
+async function login(user, pass, db) {
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: user,
+      password: pass,
+      database: db
+    });
+    return 204;
+  }
+  catch (e) {
+    console.log(e);
+    if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+      return 401;
+    }
+    else if (e.code === 'ENOTFOUND') {
+      return 404;
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+}
+
+async function executeQueries(user, pass, db, queries) {
+  let connection;
+  let responses = [];
+  let i = 0;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: user,
+      password: pass,
+      database: db
+    });
+    for (i = 0; i < queries.length; i++) {
+      responses[i] = await connection.execute(queries[i]);
+    }
+  }
+  catch (e) {
+    for (; i < queries.length; i++) {
+      repsonses[i] = null;
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+  return responses;
+}
+
+async function createTables(user, pass, db) {
+  let queries = ["CREATE TABLE IF NOT EXISTS FILE (" +
+                  "gpx_id INT AUTO_INCREMENT, " +
+                  "file_name VARCHAR(60) NOT NULL, " +
+                  "ver DECIMAL(2,1) NOT NULL, " +
+                  "creator VARCHAR(256) NOT NULL, " +
+                  "PRIMARY KEY(gpx_id));",
+                "CREATE TABLE IF NOT EXISTS ROUTE (" +
+                  "route_id INT AUTO_INCREMENT, " +
+                  "route_name VARCHAR(256), " +
+                  "route_len FLOAT(15,7) NOT NULL, " +
+                  "gpx_id INT NOT NULL, " +
+                  "PRIMARY KEY(route_id), " +
+                  "FOREIGN KEY(gpx_id) REFERENCES FILE(gpx_id) ON DELETE CASCADE);",
+                "CREATE TABLE IF NOT EXISTS POINT (" +
+                  "point_id INT AUTO_INCREMENT, " +
+                  "point_index INT NOT NULL, " +
+                  "latitude DECIMAL(11,7) NOT NULL, " +
+                  "longitude DECIMAL(11,7) NOT NULL, " +
+                  "point_name VARCHAR(256), " +
+                  "route_id INT NOT NULL, " +
+                  "PRIMARY KEY(point_id), " +
+                  "FOREIGN KEY(route_id) REFERENCES ROUTE(route_id) ON DELETE CASCADE);"];
+  executeQueries(user, pass, db, queries);
+}
+
+// Insert a GPX file into the database. Only new GPX files will be added.
+async function insertFileInDB(file, auth) {
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    let [rows, fields] = await connection.execute("SELECT * FROM FILE WHERE file_name = '" + file.name + "';");
+    if (rows.length > 0) {
+      return false; // file already exists in database
+    }
+    [rows, fields] = await connection.execute("INSERT INTO ROUTE (route_name, route_len, gpx_id) VALUES ('" + routes[i].name + "', " + routes[i].len + ", " + gpxid + ");");
+    let gpxid = rows[0]["LAST_INSERT_ID()"];
+    let routes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + file.name));
+    for (let i = 0; i < routes.length; i++) {
+      [rows, fields] = await connection.execute("INSERT INTO ROUTE (route_name, route_len, gpx_id) VALUES ('" + routes[i].name + "', " + routes[i].len + ", " + gpxid + ");");
+      [rows, fields] = await connection.execute("SELECT LAST_INSERT_ID();");
+      let routeid = rows[0]["LAST_INSERT_ID()"];
+      let points = JSON.parse(libgpxparser.getRouteWaypointsAsJSON("uploads/" + file.name, i));
+      for (let j = 0; j < points.length; j++) {
+        [rows, fields] = await connection.execute("INSERT INTO POINT (point_index, latitude, longitude, point_name, route_id) VALUES (" + j + ", " + points[j].lat + ", " + points[j].lon + ", '" + points[j].name + "', " + routeid + ");");
+      }
+    }
+    return true;
+  }
+  catch (e) {
+    console.log(e);
+    return false;
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+}
+
+// Insert a GPX file into the database. Only new GPX files will be added.
+async function addRouteToDBFile(file, auth) {
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    let [rows, fields] = await connection.execute("SELECT gpx_id FROM FILE WHERE file_name = '" + file + "';");
+    if (rows.length === 0) {
+      return false; // file is NOT in the database; do nothing
+    }
+    let gpxid = rows[0].gpx_id;
+    let routes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + file));
+    let newroute = routes[routes.length-1];
+    [rows, fields] = await connection.execute("INSERT INTO ROUTE (route_name, route_len, gpx_id) VALUES ('" + newroute.name + "', " + newroute.len + ", " + gpxid + ");");
+    [rows, fields] = await connection.execute("SELECT LAST_INSERT_ID();");
+    let routeid = rows[0]["LAST_INSERT_ID()"];
+    let points = JSON.parse(libgpxparser.getRouteWaypointsAsJSON("uploads/" + file, routes.length-1));
+    for (let j = 0; j < points.length; j++) {
+      [rows, fields] = await connection.execute("INSERT INTO POINT (point_index, latitude, longitude, point_name, route_id) VALUES (" + j + ", " + points[j].lat + ", " + points[j].lon + ", '" + points[j].name + "', " + routeid + ");");
+    }
+    return true;
+  }
+  catch (e) {
+    console.log(e);
+    return false;
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+}
+
+// Insert a GPX file into the database. Only new GPX files will be added.
+async function renameDBRoute(file, auth, index, newname) {
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    let [rows, fields] = await connection.execute("SELECT gpx_id FROM FILE WHERE file_name = '" + file + "';");
+    if (rows.length === 0) {
+      return false; // file is NOT in the database; do nothing
+    }
+    let gpxid = rows[0].gpx_id;
+    [rows, fields] = await connection.execute("SELECT route_id FROM ROUTE WHERE gpx_id = " + gpxid + " ORDER BY route_id ASC;");
+    let routeid = rows[index].route_id;
+    [rows, fields] = await connection.execute("UPDATE ROUTE SET route_name = '" + newname + "' WHERE route_id = " + routeid + ";");
+    return true;
+  }
+  catch (e) {
+    console.log(e);
+    return false;
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+}
+
+app.post('/login', async function(req, res) {
+  let user = req.body.user;
+  let pass = req.body.pass;
+  let db = req.body.db;
+  let status = await login(user, pass, db);
+  if (status == 401) {
+    return res.status(401).send("Authentication failed");
+  }
+  else if (status == 404) {
+    return res.status(404).send("Database server not found");
+  }
+  else if (status != 204) {
+    return res.status(500).send("Connection failed");
+  }
+  await createTables(user, pass, db);
+  res.status(204).send();
 });
 
 app.listen(portNum);

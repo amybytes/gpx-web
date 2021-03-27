@@ -3,6 +3,7 @@ var waypoint = [];
 var renameFileName = null;
 var renameIndex = -1;
 var renameType = null;
+var auth;
 
 // Put all onload AJAX calls here, and event listeners
 $(document).ready(function() {
@@ -105,7 +106,8 @@ $(document).ready(function() {
                 file: file.name,
                 name: routeName,
                 waypoints: waypoints,
-                delta: delta
+                delta: delta,
+                auth: auth
             }),
             success: function(data) {
                 console.log("Successfully added route to '" + file.name + "'");
@@ -189,7 +191,8 @@ $(document).ready(function() {
                 name: renameFileName,
                 index: renameIndex,
                 type: renameType,
-                newname: newname
+                newname: newname,
+                auth: auth
             }),
             success: function (data) {
                 console.log("Component in '" + renameFileName + "' renamed successfully");
@@ -204,7 +207,7 @@ $(document).ready(function() {
                     }
                 }
             },
-            fail: function(error) {
+            error: function(error) {
                 console.log("Failed to rename component in GPX file '" + renameFileName + "'");
                 alert("Error: " + error.responseText); 
             }
@@ -235,8 +238,45 @@ $(document).ready(function() {
                 updateLengthText(len, data.numRoutes, data.numTracks);
                 window.scrollBy(0, document.body.scrollHeight);
             },
-            fail: function(error) {
+            error: function(error) {
                 console.log("Failed to get the number of components with length " + len + ".");
+                alert("Error: " + error.responseText);
+            }
+        });
+    });
+
+    $("#dbLoginForm").submit(function(e) {
+        e.preventDefault();
+        if (!validateLoginForm()) {
+            alert("Failed to login. Please check your input.");
+            return;
+        }
+        let usernameEntry = document.getElementById("loginUsernameEntry");
+        let passwordEntry = document.getElementById("loginPasswordEntry");
+        let dbEntry = document.getElementById("loginDatabaseNameEntry");
+        let username = usernameEntry.value;
+        let password = passwordEntry.value;
+        let dbname = dbEntry.value;
+        let tempAuth = {
+            user: username,
+            pass: password,
+            db: dbname
+        };
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            contentType: 'application/json',
+            url: '/login',
+            data: JSON.stringify(tempAuth),
+            success: function (data) {
+                console.log("Successfully logged into \"" + dbname + "\".");
+                alert("Successfully logged into the database.");
+                $("#login").hide();
+                $("#dbActions").show();
+                auth = tempAuth;
+            },
+            error: function(error) {
+                console.log("Failed to login to \"" + dbname + "\".");
                 alert("Error: " + error.responseText);
             }
         });
@@ -295,6 +335,37 @@ function setGPXViewSelectedFile(file) {
             alert("Error: " + error.responseText);
         }
     });
+}
+
+function validateLoginForm() {
+    let valid = true;
+    let usernameEntry = document.getElementById("loginUsernameEntry");
+    let passwordEntry = document.getElementById("loginPasswordEntry");
+    let dbnameEntry = document.getElementById("loginDatabaseNameEntry");
+    if (usernameEntry.value.length === 0) {
+        $("#loginUsernameEntry").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#loginUsernameEntry").removeClass("is-invalid");
+    }
+
+    if (passwordEntry.value.length === 0) {
+        $("#loginPasswordEntry").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#loginPasswordEntry").removeClass("is-invalid");
+    }
+
+    if (dbnameEntry.value.length === 0) {
+        $("#loginDatabaseNameEntry").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#loginDatabaseNameEntry").removeClass("is-invalid");
+    }
+    return valid;
 }
 
 function updateFoundPathText(numPaths) {

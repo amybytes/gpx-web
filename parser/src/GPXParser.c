@@ -2274,3 +2274,47 @@ int renameTrack(char *filename, int index, char *newname, char *schema) {
 
     return status;
 }
+
+JSONObject *waypointToJSONObject(Waypoint *waypoint) {
+    JSONObject *json = createJSONObject();
+    if (waypoint == NULL) {
+        return json;
+    }
+
+    putStringInJSONObject(json, "name", waypoint->name);
+    putDoubleInJSONObject(json, "lat", waypoint->latitude, false);
+    putDoubleInJSONObject(json, "lon", waypoint->longitude, false);
+
+    return json;
+}
+
+char *getRouteWaypointsAsJSON(char *filename, int routeIndex) {
+    JSONArray *json = createJSONArray();
+    GPXdoc *doc = createGPXdoc(filename);
+    if (doc == NULL) {
+        return jsonArrayToStringAndEat(json);
+    }
+
+    ListIterator it = createIterator(doc->routes);
+    Route *rte;
+    while (routeIndex-- >= 0 && (rte = (Route *)nextElement(&it)) != NULL) {}
+
+    if (routeIndex >= 0) {
+        deleteGPXdoc(doc);
+        return jsonArrayToStringAndEat(json);
+    }
+
+    it = createIterator(rte->waypoints);
+
+    Waypoint *wpt;
+    while ((wpt = (Waypoint *)nextElement(&it)) != NULL) {
+        JSONObject *wptjson = waypointToJSONObject(wpt);
+        if (!isEmptyJSONObject(wptjson)) {
+            addJSONObjectToJSONArray(json, wptjson);
+        }
+        deleteJSONObject(wptjson);
+    }
+
+    deleteGPXdoc(doc);
+    return jsonArrayToStringAndEat(json);
+}
