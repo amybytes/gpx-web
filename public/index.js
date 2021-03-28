@@ -287,10 +287,6 @@ $(document).ready(function() {
 
     $("#allRoutesQueryForm").submit(function(e) {
         e.preventDefault();
-        // if (auth !== undefined) {
-        //     alert("Failed to login. Please check your input.");
-        //     return;
-        // }
         let sortbySelect = document.getElementById("allRoutesQuerySortSelect");
         let sortby = sortbySelect.value;
         $.ajax({
@@ -302,11 +298,25 @@ $(document).ready(function() {
                 auth: auth
             },
             success: function (data) {
-                // console.log("Successfully logged into \"" + dbname + "\".");
-                console.log(data);
+                console.log("Query 1 success.");
+                let table = document.getElementById("allRoutesQueryTable");
+                clearTable(table);
+                for (let i = 0; i < data.routes.length; i++) {
+                    addRouteToTable(table, data.routes[i]);
+                }
+                if (data.routes.length > 0) {
+                    $("#allRoutesQueryOutput").show();
+                }
+                else {
+                    $("#allRoutesQueryOutput").hide();
+                }
+                let queryText = document.getElementById("allRoutesQueryText");
+                updateQueryText(queryText, data.routes.length);
+                $("#allRoutesQueryText").show();
+                document.getElementById("queries").scrollIntoView(true);
             },
             error: function(error) {
-                // console.log("Failed to login to \"" + dbname + "\".");
+                console.log("Query 1 failed.");
                 alert("Error: " + error.responseText);
             }
         });
@@ -314,40 +324,10 @@ $(document).ready(function() {
 
     $("#specificRoutesQueryForm").submit(function(e) {
         e.preventDefault();
-        // if (auth !== undefined) {
-        //     alert("Failed to login. Please check your input.");
-        //     return;
-        // }
-        let filenameSelect = document.getElementById("specificRoutesQueryFileSelect");
-        let filename = files[filenameSelect.selectedIndex-1];
-        let sortbySelect = document.getElementById("specificRoutesQuerySortSelect");
-        let sortby = sortbySelect.value;
-        $.ajax({
-            type: 'get',
-            dataType: 'json',
-            url: '/db/specificroutes',
-            data: {
-                file: filename,
-                sortby: sortby,
-                auth: auth
-            },
-            success: function (data) {
-                // console.log("Successfully logged into \"" + dbname + "\".");
-                console.log(data);
-            },
-            error: function(error) {
-                // console.log("Failed to login to \"" + dbname + "\".");
-                alert("Error: " + error.responseText);
-            }
-        });
-    });
-
-    $("#routePointsQueryForm").submit(function(e) {
-        e.preventDefault();
-        // if (auth !== undefined) {
-        //     alert("Failed to login. Please check your input.");
-        //     return;
-        // }
+        if (!validateQuery2()) {
+            alert("Query failed. Please check your input.");
+            return;
+        }
         let filenameSelect = document.getElementById("specificRoutesQueryFileSelect");
         let file = files[filenameSelect.selectedIndex-1];
         let sortbySelect = document.getElementById("specificRoutesQuerySortSelect");
@@ -355,18 +335,77 @@ $(document).ready(function() {
         $.ajax({
             type: 'get',
             dataType: 'json',
-            url: '/db/routepoints',
+            url: '/db/specificroutes',
             data: {
                 file: file.name,
                 sortby: sortby,
                 auth: auth
             },
             success: function (data) {
-                // console.log("Successfully logged into \"" + dbname + "\".");
+                console.log("Query 2 success.");
                 console.log(data);
+                let table = document.getElementById("specificRoutesQueryTable");
+                clearTable(table);
+                for (let i = 0; i < data.routes.length; i++) {
+                    addRouteToTable(table, data.routes[i]);
+                }
+                if (data.routes.length > 0) {
+                    $("#specificRoutesQueryOutput").show();
+                }
+                else {
+                    $("#specificRoutesQueryOutput").hide();
+                }
+                let queryText = document.getElementById("specificRoutesQueryText");
+                updateQueryText(queryText, data.routes.length);
+                $("#specificRoutesQueryText").show();
+                document.getElementById("queries").scrollIntoView(true);
             },
             error: function(error) {
-                // console.log("Failed to login to \"" + dbname + "\".");
+                console("Query 2 failed.");
+                alert("Error: " + error.responseText);
+            }
+        });
+    });
+
+    $("#routePointsQueryForm").submit(function(e) {
+        e.preventDefault();
+        if (!validateQuery3()) {
+            alert("Query failed. Please check your input.");
+            return;
+        }
+        let filenameSelect = document.getElementById("routePointsQueryFileSelect");
+        let file = files[filenameSelect.selectedIndex-1];
+        let routeSelect = document.getElementById("routePointsQueryRouteSelect");
+        let routeIndex = routeSelect.selectedIndex-1;
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: '/db/routepoints',
+            data: {
+                file: file.name,
+                index: routeIndex,
+                auth: auth
+            },
+            success: function (data) {
+                console.log("Query 3 success.");
+                let table = document.getElementById("routePointsQueryTable");
+                clearTable(table);
+                for (let i = 0; i < data.points.length; i++) {
+                    addPointToTable(table, data.points[i]);
+                }
+                if (data.points.length > 0) {
+                    $("#routePointsQueryOutput").show();
+                }
+                else {
+                    $("#routePointsQueryOutput").hide();
+                }
+                let queryText = document.getElementById("routePointsQueryText");
+                updateQueryText(queryText, data.points.length);
+                $("#routePointsQueryText").show();
+                document.getElementById("queries").scrollIntoView(true);
+            },
+            error: function(error) {
+                console.log("Query 3 failed.");
                 alert("Error: " + error.responseText);
             }
         });
@@ -374,10 +413,10 @@ $(document).ready(function() {
 
     $("#allFilePointsQueryForm").submit(function(e) {
         e.preventDefault();
-        // if (auth !== undefined) {
-        //     alert("Failed to login. Please check your input.");
-        //     return;
-        // }
+        if (!validateQuery4()) {
+            alert("Query failed. Please check your input.");
+            return;
+        }
         let filenameSelect = document.getElementById("allFilePointsQueryFileSelect");
         let file = files[filenameSelect.selectedIndex-1];
         let sortbySelect = document.getElementById("allFilePointsQuerySortSelect");
@@ -392,11 +431,26 @@ $(document).ready(function() {
                 auth: auth
             },
             success: function (data) {
-                // console.log("Successfully logged into \"" + dbname + "\".");
+                console.log("Query 4 success.");
                 console.log(data);
+                let table = document.getElementById("allFilePointsQueryTable");
+                clearTable(table);
+                for (let i = 0; i < data.points.length; i++) {
+                    addPointToTable(table, data.points[i]);
+                }
+                if (data.points.length > 0) {
+                    $("#allFilePointsQueryOutput").show();
+                }
+                else {
+                    $("#allFilePointsQueryOutput").hide();
+                }
+                let queryText = document.getElementById("allFilePointsQueryText");
+                updateQueryText(queryText, data.points.length);
+                $("#allFilePointsQueryText").show();
+                document.getElementById("queries").scrollIntoView(true);
             },
             error: function(error) {
-                // console.log("Failed to login to \"" + dbname + "\".");
+                console.log("Query 4 failed.");
                 alert("Error: " + error.responseText);
             }
         });
@@ -404,10 +458,10 @@ $(document).ready(function() {
 
     $("#shortestLongestRoutesQuery").submit(function(e) {
         e.preventDefault();
-        // if (auth !== undefined) {
-        //     alert("Failed to login. Please check your input.");
-        //     return;
-        // }
+        if (!validateQuery5()) {
+            alert("Query failed. Please check your input.");
+            return;
+        }
         let filenameSelect = document.getElementById("shortestLongestRoutesQueryFileSelect");
         let file = files[filenameSelect.selectedIndex-1];
         let numRoutesEntry = document.getElementById("shortestLongestRoutesQueryNumRoutesEntry");
@@ -428,11 +482,25 @@ $(document).ready(function() {
                 auth: auth
             },
             success: function (data) {
-                // console.log("Successfully logged into \"" + dbname + "\".");
-                console.log(data);
+                console.log("Query 5 success.");
+                let table = document.getElementById("shortestLongestRoutesQueryTable");
+                clearTable(table);
+                for (let i = 0; i < data.routes.length; i++) {
+                    addRouteToTable(table, data.routes[i]);
+                }
+                if (data.routes.length > 0) {
+                    $("#shortestLongestRoutesQueryOutput").show();
+                }
+                else {
+                    $("#shortestLongestRoutesQueryOutput").hide();
+                }
+                let queryText = document.getElementById("shortestLongestRoutesQueryText");
+                updateQueryText(queryText, data.routes.length);
+                $("#shortestLongestRoutesQueryText").show();
+                document.getElementById("queries").scrollIntoView(true);
             },
             error: function(error) {
-                // console.log("Failed to login to \"" + dbname + "\".");
+                console.log("Query 5 failed.");
                 alert("Error: " + error.responseText);
             }
         });
@@ -447,7 +515,118 @@ $(document).ready(function() {
         let file = files[fileSelect.selectedIndex-1];
         setGPXViewSelectedFile(file);
     };
+
+    document.getElementById("routePointsQueryFileSelect").onchange = function(e) {
+        let fileSelect = document.getElementById("routePointsQueryFileSelect");
+        let file = files[fileSelect.selectedIndex-1];
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: '/gpxinfo',
+            data: {
+                file: file.name
+            },
+            success: function (data) {
+                let routesSelect = document.getElementById("routePointsQueryRouteSelect");
+                clearChildren(routesSelect);
+                for (let i = 0; i < data.routes.length; i++) {
+                    let option = document.createElement("option");
+                    let name = "Route " + (i+1);
+                    if (data.routes[i].name !== "None") {
+                        name += " -- " + data.routes[i].name;
+                    }
+                    option.innerHTML = name;
+                    routesSelect.appendChild(option);
+                }
+            },
+            error: function(error) {
+                alert("Error: " + error.responseText);
+            }
+        });
+    }
 });
+
+function validateQuery2() {
+    let fileSelect = document.getElementById("specificRoutesQueryFileSelect");
+    if (fileSelect.selectedIndex === 0) {
+        $("#specificRoutesQueryFileSelect").addClass("is-invalid");
+        return false;
+    }
+    else {
+        $("#specificRoutesQueryFileSelect").removeClass("is-invalid");
+        return true;
+    }
+}
+
+function validateQuery3() {
+    let valid = true;
+    let fileSelect = document.getElementById("routePointsQueryFileSelect");
+    let routeSelect = document.getElementById("routePointsQueryRouteSelect");
+    if (fileSelect.selectedIndex === 0) {
+        $("#routePointsQueryFileSelect").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#routePointsQueryFileSelect").removeClass("is-invalid");
+    }
+
+    if (routeSelect.selectedIndex === 0) {
+        $("#routePointsQueryRouteSelect").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#routePointsQueryRouteSelect").removeClass("is-invalid");
+    }
+    return valid;
+}
+
+function validateQuery4() {
+    let fileSelect = document.getElementById("allFilePointsQueryFileSelect");
+    if (fileSelect.selectedIndex === 0) {
+        $("#allFilePointsQueryFileSelect").addClass("is-invalid");
+        return false;
+    }
+    else {
+        $("#allFilePointsQueryFileSelect").removeClass("is-invalid");
+        return true;
+    }
+}
+
+function validateQuery5() {
+    let valid = true;
+    let fileSelect = document.getElementById("shortestLongestRoutesQueryFileSelect");
+    let numRoutesEntry = document.getElementById("shortestLongestRoutesQueryNumRoutesEntry");
+    if (fileSelect.selectedIndex === 0) {
+        $("#shortestLongestRoutesQueryFileSelect").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#shortestLongestRoutesQueryFileSelect").removeClass("is-invalid");
+    }
+
+    if (numRoutesEntry.value === "") {
+        $("#shortestLongestRoutesQueryNumRoutesEntry").addClass("is-invalid");
+        valid = false;
+    }
+    else {
+        $("#shortestLongestRoutesQueryNumRoutesEntry").removeClass("is-invalid");
+    }
+    return valid;
+}
+
+function updateQueryText(queryText, numRows) {
+    let color = "green";
+    if (numRows === 0) {
+        color = "red";
+    }
+    
+    if (numRows === 1) {
+        queryText.innerHTML = "Got <span style='color:" + color + "'>" + numRows + "</span> row";
+    }
+    else {
+        queryText.innerHTML = "Got <span style='color:" + color + "'>" + numRows + "</span> rows";
+    }
+}
 
 function storeAllFilesInDB() {
     $.ajax({
@@ -1094,7 +1273,44 @@ function clearFindPathTable() {
 }
 
 function clearTable(table) {
-    while (table.children.length > 1) {
-        table.removeChild(table.lastChild);
+    clearChildren(table);
+}
+
+function clearChildren(ele) {
+    while (ele.children.length > 1) {
+        ele.removeChild(ele.lastChild);
     }
+}
+
+function addPointToTable(table, point) {
+    let row = document.createElement("tr");
+    let td = document.createElement("td");
+    if (point.name === undefined) {
+        td.innerHTML = "";
+    }
+    else {
+        td.innerHTML = point.name;
+    }
+    row.appendChild(td);
+    td = document.createElement("td");
+    td.innerHTML = point.lat;
+    row.appendChild(td);
+    td = document.createElement("td");
+    td.innerHTML = point.lon;
+    row.appendChild(td);
+    td = document.createElement("td");
+    td.innerHTML = point.routename;
+    row.appendChild(td);
+    table.appendChild(row);
+}
+
+function addRouteToTable(table, route) {
+    let row = document.createElement("tr");
+    let td = document.createElement("td");
+    td.innerHTML = route.name;
+    row.appendChild(td);
+    td = document.createElement("td");
+    td.innerHTML = route.len + "m";
+    row.appendChild(td);
+    table.appendChild(row);
 }

@@ -666,16 +666,9 @@ app.get('/db/specificroutes', async function(req, res) {
 
 app.get('/db/routepoints', async function(req, res) {
   let file = req.query.file;
-  let sortby = req.query.sortby;
+  let index = req.query.index;
   let auth = req.query.auth;
-  let orderby = "route_id";
-  if (sortby === "Route name") {
-    orderby = "route_name";
-  }
-  else if (sortby === "Length") {
-    orderby = "route_len";
-  }
-  let routes = [];
+  let points = [];
   let connection;
   try {
     connection = await mysql.createConnection({
@@ -684,13 +677,16 @@ app.get('/db/routepoints', async function(req, res) {
       password: auth.pass,
       database: auth.db
     });
-    // let [rows, fields] = await connection.execute("SELECT * FROM ROUTE WHERE gpx_id = (SELECT gpx_id FROM FILE WHERE file_name = '" + file + "') ORDER BY " + orderby + ";");
-    // for (let i = 0; i < rows.length; i++) {
-    //   routes[i] = {
-    //     name: rows[i].route_name,
-    //     len: rows[i].route_len
-    //   };
-    // }
+    let [rows, fields] = await connection.execute("SELECT * FROM ROUTE WHERE gpx_id = (SELECT gpx_id FROM FILE WHERE file_name = '" + file + "') ORDER BY route_id;");
+    let routeid = rows[index].route_id;
+    [rows, fields] = await connection.execute("SELECT * FROM POINT WHERE route_id = " + routeid + " ORDER BY point_index;");
+    for (let i = 0; i < rows.length; i++) {
+      points[i] = {
+        lat: rows[i].latitude,
+        lon: rows[i].longitude,
+        name: rows[i].name
+      };
+    }
   }
   catch (e) {
     console.log(e);
@@ -707,7 +703,7 @@ app.get('/db/routepoints', async function(req, res) {
     }
   }
   res.status(200).send({
-    routes: routes
+    points: points
   });
 });
 
@@ -796,7 +792,7 @@ app.get('/db/nlengthroutes', async function(req, res) {
     let [rows, fields] = await connection.execute("SELECT * FROM (SELECT * FROM ROUTE WHERE gpx_id = (SELECT gpx_id FROM FILE WHERE file_name = '" + file + "') ORDER BY route_len " + sortorder +") AS ROUTES ORDER BY " + orderby + ";");
     for (let i = 0; i < rows.length && i < numroutes; i++) {
       routes[i] = {
-        routename: rows[i].route_name,
+        name: rows[i].route_name,
         len: rows[i].route_len
       };
     }

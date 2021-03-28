@@ -17,7 +17,7 @@
     <!-- Custom CSS End -->
 </head>
 <body>
-    <h2>File Log</h2>
+    <h2 id="fileLogHeader">File Log</h2>
     <h5 id="noFileHeader">No files</h5>
     <div id="fileLog" class="hiddenView log">
         <table id="fileLogTable">
@@ -281,14 +281,11 @@
 
     <div id="allRoutesQuery" class="dbquery">
         <h4>Query: Get all routes</h4>
-        <div id="allRoutesQueryOutput" class="hiddenView">
+        <div id="allRoutesQueryOutput" class="hiddenView log">
             <table id="allRoutesQueryTable">
                 <tr>
-                    <th>Component</th>
                     <th>Name</th>
-                    <th>Number of points</th>
                     <th>Length</th>
-                    <th>Loop</th>
                 </tr>
             </table>
         </div>
@@ -301,6 +298,7 @@
                 </select>
             </div>
             <div class="form-group">
+                <p id="allRoutesQueryText" class="hiddenView"></p>
                 <input type="submit" value="Execute Query" class="btn btn-secondary">
             </div>
         </form>
@@ -308,7 +306,7 @@
 
     <div id="specificRoutesQuery" class="dbquery">
         <h4>Query: Get routes from file</h4>
-        <div id="specificRoutesQueryOutput" class="hiddenView">
+        <div id="specificRoutesQueryOutput" class="hiddenView log">
             <table id="specificRoutesQueryTable">
                 <tr>
                     <th>Name</th>
@@ -333,6 +331,7 @@
                 </select>
             </div>
             <div class="form-group">
+                <p id="specificRoutesQueryText" class="hiddenView"></p>
                 <input type="submit" value="Execute Query" class="btn btn-secondary">
             </div>
         </form>
@@ -340,14 +339,13 @@
     
     <div id="routePointsQuery" class="dbquery">
         <h4>Query: Get all route points</h4>
-        <div id="routePointsQueryOutput" class="hiddenView">
+        <div id="routePointsQueryOutput" class="hiddenView log">
             <table id="routePointsQueryTable">
                 <tr>
-                    <th>Point</th>
-                    <th>Name</th>
-                    <th>Index</th>
+                    <th>Point Name</th>
                     <th>Latitude</th>
                     <th>Longitude</th>
+                    <th>Route name</th>
                 </tr>
             </table>
         </div>
@@ -369,13 +367,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label id="routePointsQuerySort" for="routePointsQuerySortSelect">Sort by</label>
-                <select id="routePointsQuerySortSelect" class="form-control" style="width: 35%" autocomplete="off">
-                    <option value="Route name"/>Route name</option>
-                    <option value="Length"/>Length</option>
-                </select>
-            </div>
-            <div class="form-group">
+                <p id="routePointsQueryText" class="hiddenView"></p>
                 <input type="submit" value="Execute Query" class="btn btn-secondary">
             </div>
         </form>
@@ -383,14 +375,13 @@
 
     <div id="allFilePointsQuery" class="dbquery">
         <h4>Query: Get all points from file</h4>
-        <div id="allFilePointsQueryOutput" class="hiddenView">
+        <div id="allFilePointsQueryOutput" class="hiddenView log">
             <table id="allFilePointsQueryTable">
                 <tr>
-                    <th>Point</th>
-                    <th>Name</th>
-                    <th>Index</th>
+                    <th>Point Name</th>
                     <th>Latitude</th>
                     <th>Longitude</th>
+                    <th>Route name</th>
                 </tr>
             </table>
         </div>
@@ -411,6 +402,7 @@
                 </select>
             </div>
             <div class="form-group">
+                <p id="allFilePointsQueryText" class="hiddenView"></p>
                 <input type="submit" value="Execute Query" class="btn btn-secondary">
             </div>
         </form>
@@ -418,7 +410,7 @@
 
     <div id="shortestLongestRoutesQuery" class="dbquery">
         <h4>Query: Get shortest/longest routes from file</h4>
-        <div id="shortestLongestRoutesQueryOutput" class="hiddenView">
+        <div id="shortestLongestRoutesQueryOutput" class="hiddenView log">
             <table id="shortestLongestRoutesQueryTable">
                 <tr>
                     <th>Name</th>
@@ -457,6 +449,7 @@
                 </select>
             </div>
             <div class="form-group">
+                <p id="shortestLongestRoutesQueryText" class="hiddenView"></p>
                 <input type="submit" value="Execute Query" class="btn btn-secondary">
             </div>
         </form>
