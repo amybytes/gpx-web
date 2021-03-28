@@ -165,7 +165,8 @@ $(document).ready(function() {
                 let tracks = data.tracks;
                 addComponentsToFindPathTable(routes, "Route");
                 addComponentsToFindPathTable(tracks, "Track");
-                window.scrollBy(0, document.body.scrollHeight);
+                // window.scrollBy(0, document.body.scrollHeight);
+                document.getElementById("actionsHeader").scrollIntoView(true);
             },
             error: function(error) {
                 console.log("Failed to get list of found paths: " + error.responseText);
@@ -236,7 +237,8 @@ $(document).ready(function() {
             success: function (data) {
                 console.log("Successfully got number of components with length " + len + ".");
                 updateLengthText(len, data.numRoutes, data.numTracks);
-                window.scrollBy(0, document.body.scrollHeight);
+                // window.scrollBy(0, document.body.scrollHeight);
+                document.getElementById("actionsHeader").scrollIntoView(true);
             },
             error: function(error) {
                 console.log("Failed to get the number of components with length " + len + ".");
@@ -273,10 +275,164 @@ $(document).ready(function() {
                 alert("Successfully logged into the database.");
                 $("#login").hide();
                 $("#dbActions").show();
+                $("#queries").show();
                 auth = tempAuth;
             },
             error: function(error) {
                 console.log("Failed to login to \"" + dbname + "\".");
+                alert("Error: " + error.responseText);
+            }
+        });
+    });
+
+    $("#allRoutesQueryForm").submit(function(e) {
+        e.preventDefault();
+        // if (auth !== undefined) {
+        //     alert("Failed to login. Please check your input.");
+        //     return;
+        // }
+        let sortbySelect = document.getElementById("allRoutesQuerySortSelect");
+        let sortby = sortbySelect.value;
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: '/db/allroutes',
+            data: {
+                sortby: sortby,
+                auth: auth
+            },
+            success: function (data) {
+                // console.log("Successfully logged into \"" + dbname + "\".");
+                console.log(data);
+            },
+            error: function(error) {
+                // console.log("Failed to login to \"" + dbname + "\".");
+                alert("Error: " + error.responseText);
+            }
+        });
+    });
+
+    $("#specificRoutesQueryForm").submit(function(e) {
+        e.preventDefault();
+        // if (auth !== undefined) {
+        //     alert("Failed to login. Please check your input.");
+        //     return;
+        // }
+        let filenameSelect = document.getElementById("specificRoutesQueryFileSelect");
+        let filename = files[filenameSelect.selectedIndex-1];
+        let sortbySelect = document.getElementById("specificRoutesQuerySortSelect");
+        let sortby = sortbySelect.value;
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: '/db/specificroutes',
+            data: {
+                file: filename,
+                sortby: sortby,
+                auth: auth
+            },
+            success: function (data) {
+                // console.log("Successfully logged into \"" + dbname + "\".");
+                console.log(data);
+            },
+            error: function(error) {
+                // console.log("Failed to login to \"" + dbname + "\".");
+                alert("Error: " + error.responseText);
+            }
+        });
+    });
+
+    $("#routePointsQueryForm").submit(function(e) {
+        e.preventDefault();
+        // if (auth !== undefined) {
+        //     alert("Failed to login. Please check your input.");
+        //     return;
+        // }
+        let filenameSelect = document.getElementById("specificRoutesQueryFileSelect");
+        let file = files[filenameSelect.selectedIndex-1];
+        let sortbySelect = document.getElementById("specificRoutesQuerySortSelect");
+        let sortby = sortbySelect.value;
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: '/db/routepoints',
+            data: {
+                file: file.name,
+                sortby: sortby,
+                auth: auth
+            },
+            success: function (data) {
+                // console.log("Successfully logged into \"" + dbname + "\".");
+                console.log(data);
+            },
+            error: function(error) {
+                // console.log("Failed to login to \"" + dbname + "\".");
+                alert("Error: " + error.responseText);
+            }
+        });
+    });
+
+    $("#allFilePointsQueryForm").submit(function(e) {
+        e.preventDefault();
+        // if (auth !== undefined) {
+        //     alert("Failed to login. Please check your input.");
+        //     return;
+        // }
+        let filenameSelect = document.getElementById("allFilePointsQueryFileSelect");
+        let file = files[filenameSelect.selectedIndex-1];
+        let sortbySelect = document.getElementById("allFilePointsQuerySortSelect");
+        let sortby = sortbySelect.value;
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: '/db/filepoints',
+            data: {
+                file: file.name,
+                sortby: sortby,
+                auth: auth
+            },
+            success: function (data) {
+                // console.log("Successfully logged into \"" + dbname + "\".");
+                console.log(data);
+            },
+            error: function(error) {
+                // console.log("Failed to login to \"" + dbname + "\".");
+                alert("Error: " + error.responseText);
+            }
+        });
+    });
+
+    $("#shortestLongestRoutesQuery").submit(function(e) {
+        e.preventDefault();
+        // if (auth !== undefined) {
+        //     alert("Failed to login. Please check your input.");
+        //     return;
+        // }
+        let filenameSelect = document.getElementById("shortestLongestRoutesQueryFileSelect");
+        let file = files[filenameSelect.selectedIndex-1];
+        let numRoutesEntry = document.getElementById("shortestLongestRoutesQueryNumRoutesEntry");
+        let numRoutes = numRoutesEntry.value;
+        let orderTypeSelect = document.getElementById("shortestLongestRoutesQueryTypeSelect");
+        let orderType = orderTypeSelect.value;
+        let sortbySelect = document.getElementById("shortestLongestRoutesQuerySortSelect");
+        let sortby = sortbySelect.value;
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: '/db/nlengthroutes',
+            data: {
+                file: file.name,
+                numroutes: numRoutes,
+                ordertype: orderType,
+                sortby: sortby,
+                auth: auth
+            },
+            success: function (data) {
+                // console.log("Successfully logged into \"" + dbname + "\".");
+                console.log(data);
+            },
+            error: function(error) {
+                // console.log("Failed to login to \"" + dbname + "\".");
                 alert("Error: " + error.responseText);
             }
         });
@@ -292,6 +448,66 @@ $(document).ready(function() {
         setGPXViewSelectedFile(file);
     };
 });
+
+function storeAllFilesInDB() {
+    $.ajax({
+        type: 'post',
+        dataType: 'json',
+        contentType: 'application/json',
+        url: '/db/store',
+        data: JSON.stringify({
+            auth: auth
+        }),
+        success: function (data) {
+            console.log("Successfully stored %d files.", data.success);
+            showDBStatusAlert();
+        },
+        error: function(error) {
+            console.log("Failed to store the files.");
+            showDBStatusAlert();
+        }
+    });
+}
+
+function clearAllFilesInDB() {
+    $.ajax({
+        type: 'post',
+        dataType: 'json',
+        contentType: 'application/json',
+        url: '/db/clear',
+        data: JSON.stringify({
+            auth: auth
+        }),
+        success: function(data) {
+            console.log("Successfully cleared database files.");
+            showDBStatusAlert();
+        },
+        error: function(error) {
+            console.log("Failed to clear database files.");
+            showDBStatusAlert();
+        }
+    })
+}
+
+function showDBStatusAlert() {
+    $.ajax({
+        type: 'get',
+        dataType: 'json',
+        url: '/db/info',
+        data: {
+            auth: auth
+        },
+        success: function(data) {
+            console.log("Successfully got database status.");
+            let status = "Database has " + data.numfiles + " files, " + data.numroutes + " routes, and " + data.numpoints + " points.";
+            alert(status);
+        },
+        error: function(data) {
+            console.log("Failed to get database status.");
+            alert("Failed to get database status.");
+        }
+    })
+}
 
 // Increments the number of routes counter in the file log for a specific file
 function incrementFileLogNumRoutes(filename) {
@@ -679,10 +895,37 @@ function initializeFileLog() {
     }
 }
 
+function showQuery(id) {
+    $(".dbquery").hide();
+    $(id).show();
+    document.getElementById("queries").scrollIntoView(true);
+}
+
+function showQuery1() {
+    showQuery("#allRoutesQuery");
+}
+
+function showQuery2() {
+    showQuery("#specificRoutesQuery");
+}
+
+function showQuery3() {
+    showQuery("#routePointsQuery");
+}
+
+function showQuery4() {
+    showQuery("#allFilePointsQuery");
+}
+
+function showQuery5() {
+    showQuery("#shortestLongestRoutesQuery");
+}
+
 function showAction(id) {
     $(".actionDiv").hide();
     $(id).show();
-    window.scrollBy(0, document.body.scrollHeight);
+    // window.scrollBy(0, document.body.scrollHeight);
+    document.getElementById("actionsHeader").scrollIntoView(true);
 }
 
 function showUploadGPXAction() {
@@ -712,7 +955,8 @@ function showNumComponentsAction() {
 function renameComponent(gpxFileName, index, type) {
     console.log("Rename requested route/track '" + index + "' of '" + gpxFileName + "'");
     showRenameAction();
-    window.scrollBy(0, document.body.scrollHeight);
+    // window.scrollBy(0, document.body.scrollHeight);
+    document.getElementById("actionsHeader").scrollIntoView(true);
     renameFileName = gpxFileName;
     renameIndex = index;
     renameType = type;

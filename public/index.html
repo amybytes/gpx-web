@@ -69,7 +69,7 @@
 
     <hr>
 
-    <h2>Actions</h2>
+    <h2 id="actionsHeader">Actions</h2>
     <ul style="padding: 0">
         <input type="button" value="Create GPX" class="btn btn-secondary gridInput" onclick="showCreateGPXAction();">
         <input type="button" value="Add route" class="btn btn-secondary gridInput" onclick="showAddRouteAction();">
@@ -232,8 +232,8 @@
     <h2>Database</h2>
     <div id="dbActions" class="hiddenView">
         <ul style="padding: 0">
-            <input type="button" value="Store all files" class="btn btn-secondary" onclick="showStoreAllAction();">
-            <input type="button" value="Clear all data" class="btn btn-secondary" onclick="showClearAllAction();">
+            <input type="button" value="Store all files" class="btn btn-secondary" onclick="storeAllFilesInDB();">
+            <input type="button" value="Clear all data" class="btn btn-secondary" onclick="clearAllFilesInDB();">
             <!-- <input type="button" value="Execute Query" class="btn btn-secondary" onclick="showExecuteQueryAction();"> -->
         </ul>
     </div>
@@ -268,15 +268,198 @@
         </form>
     </div>
 
-    <div id="queries" class="dbActionDiv">
+    <div id="queries" class="dbActionDiv hiddenView">
         <h4>Queries</h4>
         <ul style="padding: 0">
-            <input type="button" value="Get all routes" class="btn btn-secondary gridInput" onclick="showStoreAllAction();">
-            <input type="button" value="Get routes from file" class="btn btn-secondary gridInput" onclick="showClearAllAction();">
-            <input type="button" value="Get all route points" class="btn btn-secondary gridInput" onclick="showExecuteQueryAction();">
-            <input type="button" value="Get all points from file" class="btn btn-secondary gridInput" onclick="showExecuteQueryAction();">
-            <input type="button" value="Get shortest/longest routes from file" class="btn btn-secondary gridInput" onclick="showExecuteQueryAction();">
+            <input type="button" value="Get all routes" class="btn btn-secondary gridInput" onclick="showQuery1();">
+            <input type="button" value="Get routes from file" class="btn btn-secondary gridInput" onclick="showQuery2();">
+            <input type="button" value="Get all route points" class="btn btn-secondary gridInput" onclick="showQuery3();">
+            <input type="button" value="Get all points from file" class="btn btn-secondary gridInput" onclick="showQuery4();">
+            <input type="button" value="Get shortest/longest routes from file" class="btn btn-secondary gridInput" onclick="showQuery5();">
         </ul>
+    </div>
+
+    <div id="allRoutesQuery" class="dbquery">
+        <h4>Query: Get all routes</h4>
+        <div id="allRoutesQueryOutput" class="hiddenView">
+            <table id="allRoutesQueryTable">
+                <tr>
+                    <th>Component</th>
+                    <th>Name</th>
+                    <th>Number of points</th>
+                    <th>Length</th>
+                    <th>Loop</th>
+                </tr>
+            </table>
+        </div>
+        <form ref="allRoutesQueryForm" id="allRoutesQueryForm">
+            <div class="form-group">
+                <label id="allRoutesQuerySort" for="allRoutesQuerySortSelect">Sort by</label>
+                <select id="allRoutesQuerySortSelect" class="form-control" style="width: 35%" autocomplete="off">
+                    <option value="Route name"/>Route name</option>
+                    <option value="Length"/>Length</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Execute Query" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <div id="specificRoutesQuery" class="dbquery">
+        <h4>Query: Get routes from file</h4>
+        <div id="specificRoutesQueryOutput" class="hiddenView">
+            <table id="specificRoutesQueryTable">
+                <tr>
+                    <th>Name</th>
+                    <th>Length</th>
+                </tr>
+            </table>
+        </div>
+        <form ref="specificRoutesQueryForm" id="specificRoutesQueryForm">
+            <div class="form-group">
+                <select id="specificRoutesQueryFileSelect" class="form-control gpxSelect" style="width: 35%" autocomplete="off">
+                    <option value="" selected disabled hidden/>Select a GPX file...</option>
+                </select>
+                <div class="invalid-feedback">
+                    You must select a file.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="specificRoutesQuerySort" for="specificRoutesQuerySortSelect">Sort by</label>
+                <select id="specificRoutesQuerySortSelect" class="form-control" style="width: 35%" autocomplete="off">
+                    <option value="Route name"/>Route name</option>
+                    <option value="Length"/>Length</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Execute Query" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+    
+    <div id="routePointsQuery" class="dbquery">
+        <h4>Query: Get all route points</h4>
+        <div id="routePointsQueryOutput" class="hiddenView">
+            <table id="routePointsQueryTable">
+                <tr>
+                    <th>Point</th>
+                    <th>Name</th>
+                    <th>Index</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                </tr>
+            </table>
+        </div>
+        <form ref="routePointsQueryForm" id="routePointsQueryForm">
+            <div class="form-group">
+                <select id="routePointsQueryFileSelect" class="form-control gpxSelect" style="width: 35%" autocomplete="off">
+                    <option value="" selected disabled hidden/>Select a GPX file...</option>
+                </select>
+                <div class="invalid-feedback">
+                    You must select a file.
+                </div>
+            </div>
+            <div class="form-group">
+                <select id="routePointsQueryRouteSelect" class="form-control" style="width: 35%" autocomplete="off">
+                    <option value="" selected disabled hidden/>Select a route...</option>
+                </select>
+                <div class="invalid-feedback">
+                    You must select a route.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="routePointsQuerySort" for="routePointsQuerySortSelect">Sort by</label>
+                <select id="routePointsQuerySortSelect" class="form-control" style="width: 35%" autocomplete="off">
+                    <option value="Route name"/>Route name</option>
+                    <option value="Length"/>Length</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Execute Query" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <div id="allFilePointsQuery" class="dbquery">
+        <h4>Query: Get all points from file</h4>
+        <div id="allFilePointsQueryOutput" class="hiddenView">
+            <table id="allFilePointsQueryTable">
+                <tr>
+                    <th>Point</th>
+                    <th>Name</th>
+                    <th>Index</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                </tr>
+            </table>
+        </div>
+        <form ref="allFilePointsQueryForm" id="allFilePointsQueryForm">
+            <div class="form-group">
+                <select id="allFilePointsQueryFileSelect" class="form-control gpxSelect" style="width: 35%" autocomplete="off">
+                    <option value="" selected disabled hidden/>Select a GPX file...</option>
+                </select>
+                <div class="invalid-feedback">
+                    You must select a file.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="allFilePointsQuerySort" for="allFilePointsQuerySortSelect">Sort by</label>
+                <select id="allFilePointsQuerySortSelect" class="form-control" style="width: 35%" autocomplete="off">
+                    <option value="Route name"/>Route name</option>
+                    <option value="Length"/>Length</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Execute Query" class="btn btn-secondary">
+            </div>
+        </form>
+    </div>
+
+    <div id="shortestLongestRoutesQuery" class="dbquery">
+        <h4>Query: Get shortest/longest routes from file</h4>
+        <div id="shortestLongestRoutesQueryOutput" class="hiddenView">
+            <table id="shortestLongestRoutesQueryTable">
+                <tr>
+                    <th>Name</th>
+                    <th>Length</th>
+                </tr>
+            </table>
+        </div>
+        <form ref="shortestLongestRoutesQueryForm" id="shortestLongestRoutesQueryForm">
+            <div class="form-group">
+                <select id="shortestLongestRoutesQueryFileSelect" class="form-control gpxSelect" style="width: 35%" autocomplete="off">
+                    <option value="" selected disabled hidden/>Select a GPX file...</option>
+                </select>
+                <div class="invalid-feedback">
+                    You must select a file.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="shortestLongestRoutesQueryNumRoutes" for="shortestLongestRoutesQueryNumRoutesEntry">Number of routes</label>
+                <input type="text" class="form-control" id="shortestLongestRoutesQueryNumRoutesEntry" placeholder="number of routes" autocomplete="off">
+                <div class="invalid-feedback">
+                    You must enter the number of routes.
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="shortestLongestRoutesQueryType" for="shortestLongestRoutesQueryTypeSelect">Shortest/Longest</label>
+                <select id="shortestLongestRoutesQueryTypeSelect" class="form-control" style="width: 35%" autocomplete="off">
+                    <option value="Shortest"/>Shortest</option>
+                    <option value="Longest"/>Longest</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="shortestLongestRoutesQuerySort" for="shortestLongestRoutesQuerySortSelect">Sort by</label>
+                <select id="shortestLongestRoutesQuerySortSelect" class="form-control" style="width: 35%" autocomplete="off">
+                    <option value="Route name"/>Route name</option>
+                    <option value="Length"/>Length</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Execute Query" class="btn btn-secondary">
+            </div>
+        </form>
     </div>
 
     <!-- Leave me at the bottom of body -->

@@ -266,14 +266,14 @@ app.get('/gpxinfo/length', function(req, res) {
 
 const mysql = require('mysql2/promise');
 
-async function login(user, pass, db) {
+async function login(auth) {
   let connection;
   try {
     connection = await mysql.createConnection({
       host: 'dursley.socs.uoguelph.ca',
-      user: user,
-      password: pass,
-      database: db
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
     });
     return 204;
   }
@@ -293,16 +293,16 @@ async function login(user, pass, db) {
   }
 }
 
-async function executeQueries(user, pass, db, queries) {
+async function executeQueries(auth, queries) {
   let connection;
   let responses = [];
   let i = 0;
   try {
     connection = await mysql.createConnection({
       host: 'dursley.socs.uoguelph.ca',
-      user: user,
-      password: pass,
-      database: db
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
     });
     for (i = 0; i < queries.length; i++) {
       responses[i] = await connection.execute(queries[i]);
@@ -321,7 +321,7 @@ async function executeQueries(user, pass, db, queries) {
   return responses;
 }
 
-async function createTables(user, pass, db) {
+async function createTables(auth) {
   let queries = ["CREATE TABLE IF NOT EXISTS FILE (" +
                   "gpx_id INT AUTO_INCREMENT, " +
                   "file_name VARCHAR(60) NOT NULL, " +
@@ -344,7 +344,7 @@ async function createTables(user, pass, db) {
                   "route_id INT NOT NULL, " +
                   "PRIMARY KEY(point_id), " +
                   "FOREIGN KEY(route_id) REFERENCES ROUTE(route_id) ON DELETE CASCADE);"];
-  executeQueries(user, pass, db, queries);
+  executeQueries(auth, queries);
 }
 
 // Insert a GPX file into the database. Only new GPX files will be added.
@@ -359,9 +359,10 @@ async function insertFileInDB(file, auth) {
     });
     let [rows, fields] = await connection.execute("SELECT * FROM FILE WHERE file_name = '" + file.name + "';");
     if (rows.length > 0) {
-      return false; // file already exists in database
+      return 409; // file already exists in database
     }
-    [rows, fields] = await connection.execute("INSERT INTO ROUTE (route_name, route_len, gpx_id) VALUES ('" + routes[i].name + "', " + routes[i].len + ", " + gpxid + ");");
+    [rows, fields] = await connection.execute("INSERT INTO FILE (file_name, ver, creator) VALUES ('" + file.name + "', " + file.version + ", '" + file.creator + "');");
+    [rows, fields] = await connection.execute("SELECT LAST_INSERT_ID();");
     let gpxid = rows[0]["LAST_INSERT_ID()"];
     let routes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + file.name));
     for (let i = 0; i < routes.length; i++) {
@@ -369,15 +370,16 @@ async function insertFileInDB(file, auth) {
       [rows, fields] = await connection.execute("SELECT LAST_INSERT_ID();");
       let routeid = rows[0]["LAST_INSERT_ID()"];
       let points = JSON.parse(libgpxparser.getRouteWaypointsAsJSON("uploads/" + file.name, i));
+      console.log(points);
       for (let j = 0; j < points.length; j++) {
         [rows, fields] = await connection.execute("INSERT INTO POINT (point_index, latitude, longitude, point_name, route_id) VALUES (" + j + ", " + points[j].lat + ", " + points[j].lon + ", '" + points[j].name + "', " + routeid + ");");
       }
     }
-    return true;
+    return 204;
   }
   catch (e) {
     console.log(e);
-    return false;
+    return 500;
   }
   finally {
     if (connection && connection.end) {
@@ -454,11 +456,20 @@ async function renameDBRoute(file, auth, index, newname) {
   }
 }
 
+async function clearDB(auth) {
+  await executeQueries(auth, ["DELETE FROM FILE;"]);
+}
+
 app.post('/login', async function(req, res) {
   let user = req.body.user;
   let pass = req.body.pass;
   let db = req.body.db;
-  let status = await login(user, pass, db);
+  let auth = {
+    user: user,
+    pass: pass,
+    db: db
+  }
+  let status = await login(auth);
   if (status == 401) {
     return res.status(401).send("Authentication failed");
   }
@@ -468,8 +479,345 @@ app.post('/login', async function(req, res) {
   else if (status != 204) {
     return res.status(500).send("Connection failed");
   }
-  await createTables(user, pass, db);
+  await createTables(auth);
   res.status(204).send();
+});
+
+app.post('/db/store', async function(req, res) {
+  let auth = req.body.auth;
+  let files = fs.readdirSync("uploads");
+  let numAdded = 0;
+  for (let i = 0; i < files.length; i++) {
+    if (libgpxparser.validateGPXFile("uploads/" + files[i], xsdFile)) {
+      let filejson = JSON.parse(libgpxparser.getGPXFileAsJSON("uploads/" + files[i], files[i]));
+      if (await insertFileInDB(filejson, auth) == 204) {
+        numAdded++;
+      }
+    }
+  }
+  res.status(200).send({
+    success: numAdded,
+    errors: files.length-numAdded
+  });
+});
+
+app.post('/db/clear', async function(req, res) {
+  let auth = req.body.auth;
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    await connection.execute("DELETE FROM FILE;");
+  }
+  catch (e) {
+    console.log(e);
+    if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(401).send("Authentication failed.");
+    }
+    else if (e.code === 'ENOTFOUND') {
+      return res.status(404).send("Database server not found.");
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+  res.status(204).send();
+});
+
+app.get('/db/info', async function(req, res) {
+  let auth = req.query.auth;
+  let connection;
+  let numfiles = 0;
+  let numroutes = 0;
+  let numpoints = 0;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    let [rows, fields] = await connection.execute("SELECT COUNT(*) AS numfiles FROM FILE;");
+    numfiles = rows[0].numfiles;
+    [rows, fields] = await connection.execute("SELECT COUNT(*) AS numroutes FROM ROUTE;");
+    numroutes = rows[0].numroutes;
+    [rows, fields] = await connection.execute("SELECT COUNT(*) AS numpoints FROM POINT;");
+    numpoints = rows[0].numpoints;
+  }
+  catch (e) {
+    console.log(e);
+    if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(401).send("Authentication failed.");
+    }
+    else if (e.code === 'ENOTFOUND') {
+      return res.status(404).send("Database server not found.");
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+  res.status(200).send({
+    numfiles: numfiles,
+    numroutes: numroutes,
+    numpoints: numpoints
+  });
+});
+
+app.get('/db/allroutes', async function(req, res) {
+  let sortby = req.query.sortby;
+  let auth = req.query.auth;
+  let orderby = "route_id";
+  if (sortby === "Route name") {
+    orderby = "route_name";
+  }
+  else if (sortby === "Length") {
+    orderby = "route_len";
+  }
+  let routes = [];
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    let [rows, fields] = await connection.execute("SELECT route_name, route_len FROM ROUTE ORDER BY " + orderby + ";");
+    for (let i = 0; i < rows.length; i++) {
+      routes[i] = {
+        name: rows[i].route_name,
+        len: rows[i].route_len
+      };
+    }
+  }
+  catch (e) {
+    console.log(e);
+    if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(401).send("Authentication failed.");
+    }
+    else if (e.code === 'ENOTFOUND') {
+      return res.status(404).send("Database server not found.");
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+  res.status(200).send({
+    routes: routes
+  });
+});
+
+app.get('/db/specificroutes', async function(req, res) {
+  let file = req.query.file;
+  let sortby = req.query.sortby;
+  let auth = req.query.auth;
+  let orderby = "route_id";
+  if (sortby === "Route name") {
+    orderby = "route_name";
+  }
+  else if (sortby === "Length") {
+    orderby = "route_len";
+  }
+  let routes = [];
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    let [rows, fields] = await connection.execute("SELECT * FROM ROUTE WHERE gpx_id = (SELECT gpx_id FROM FILE WHERE file_name = '" + file + "') ORDER BY " + orderby + ";");
+    for (let i = 0; i < rows.length; i++) {
+      routes[i] = {
+        name: rows[i].route_name,
+        len: rows[i].route_len
+      };
+    }
+  }
+  catch (e) {
+    console.log(e);
+    if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(401).send("Authentication failed.");
+    }
+    else if (e.code === 'ENOTFOUND') {
+      return res.status(404).send("Database server not found.");
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+  res.status(200).send({
+    routes: routes
+  });
+});
+
+app.get('/db/routepoints', async function(req, res) {
+  let file = req.query.file;
+  let sortby = req.query.sortby;
+  let auth = req.query.auth;
+  let orderby = "route_id";
+  if (sortby === "Route name") {
+    orderby = "route_name";
+  }
+  else if (sortby === "Length") {
+    orderby = "route_len";
+  }
+  let routes = [];
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    // let [rows, fields] = await connection.execute("SELECT * FROM ROUTE WHERE gpx_id = (SELECT gpx_id FROM FILE WHERE file_name = '" + file + "') ORDER BY " + orderby + ";");
+    // for (let i = 0; i < rows.length; i++) {
+    //   routes[i] = {
+    //     name: rows[i].route_name,
+    //     len: rows[i].route_len
+    //   };
+    // }
+  }
+  catch (e) {
+    console.log(e);
+    if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(401).send("Authentication failed.");
+    }
+    else if (e.code === 'ENOTFOUND') {
+      return res.status(404).send("Database server not found.");
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+  res.status(200).send({
+    routes: routes
+  });
+});
+
+app.get('/db/filepoints', async function(req, res) {
+  let file = req.query.file;
+  let sortby = req.query.sortby;
+  let auth = req.query.auth;
+  let orderby = "ROUTE.route_id";
+  if (sortby === "Route name") {
+    orderby = "route_name";
+  }
+  else if (sortby === "Length") {
+    orderby = "route_len";
+  }
+  let points = [];
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    let [rows, fields] = await connection.execute("SELECT gpx_id FROM FILE WHERE file_name = '" + file + "';");
+    let gpxid = rows[0].gpx_id;
+    [rows, fields] = await connection.execute("SELECT POINT.point_index, POINT.latitude, POINT.longitude, POINT.point_name, ROUTE.route_name, ROUTE.route_len FROM POINT INNER JOIN ROUTE ON POINT.route_id = ROUTE.route_id WHERE gpx_id = " + gpxid + " ORDER BY " + orderby + ";");
+    for (let i = 0; i < rows.length; i++) {
+      points[i] = {
+        pointindex: rows[i].point_index,
+        lat: rows[i].latitude,
+        lon: rows[i].longitude,
+        pointname: rows[i].point_name,
+        routename: rows[i].route_name
+      };
+    }
+  }
+  catch (e) {
+    console.log(e);
+    if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(401).send("Authentication failed.");
+    }
+    else if (e.code === 'ENOTFOUND') {
+      return res.status(404).send("Database server not found.");
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+  res.status(200).send({
+    points: points
+  });
+});
+
+app.get('/db/nlengthroutes', async function(req, res) {
+  let file = req.query.file;
+  let numroutes = req.query.numroutes;
+  let ordertype = req.query.ordertype;
+  let sortby = req.query.sortby;
+  let auth = req.query.auth;
+  let orderby = "ROUTE.route_id";
+  if (sortby === "Route name") {
+    orderby = "route_name";
+  }
+  else if (sortby === "Length") {
+    orderby = "route_len";
+  }
+
+  let sortorder = "";
+  if (ordertype === "Shortest") {
+    sortorder = "ASC";
+  }
+  else if (ordertype === "Longest") {
+    sortorder = "DESC";
+  }
+  let routes = [];
+  let connection;
+  try {
+    connection = await mysql.createConnection({
+      host: 'dursley.socs.uoguelph.ca',
+      user: auth.user,
+      password: auth.pass,
+      database: auth.db
+    });
+    let [rows, fields] = await connection.execute("SELECT * FROM (SELECT * FROM ROUTE WHERE gpx_id = (SELECT gpx_id FROM FILE WHERE file_name = '" + file + "') ORDER BY route_len " + sortorder +") AS ROUTES ORDER BY " + orderby + ";");
+    for (let i = 0; i < rows.length && i < numroutes; i++) {
+      routes[i] = {
+        routename: rows[i].route_name,
+        len: rows[i].route_len
+      };
+    }
+  }
+  catch (e) {
+    console.log(e);
+    if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(401).send("Authentication failed.");
+    }
+    else if (e.code === 'ENOTFOUND') {
+      return res.status(404).send("Database server not found.");
+    }
+  }
+  finally {
+    if (connection && connection.end) {
+      connection.end();
+    }
+  }
+  res.status(200).send({
+    routes: routes
+  });
 });
 
 app.listen(portNum);

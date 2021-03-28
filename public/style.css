@@ -68,3 +68,6 @@ div.actionDiv {
     max-height: 200px;
     overflow: auto;
 }
+.dbquery {
+    display: none;
+}
