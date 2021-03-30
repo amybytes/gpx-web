@@ -63,7 +63,6 @@ $(document).ready(function() {
             return;
         }
         let file = getCreateGPXFile();
-        console.log(file);
         $.ajax({
             type: 'post',
             dataType: 'json',
@@ -131,7 +130,6 @@ $(document).ready(function() {
             return;
         }
         let waypoints = getFindRouteWaypoints();
-        console.log(waypoints);
         $.ajax({
             type: 'get',
             dataType: 'json',
@@ -145,7 +143,6 @@ $(document).ready(function() {
             },
             success: function(data) {
                 console.log("Successfully got list of found paths");
-                console.log(data);
                 let numPaths = 0;
                 if (data.routes.length !== undefined) {
                     numPaths += data.routes.length;
@@ -198,7 +195,6 @@ $(document).ready(function() {
                 let rows = gpxViewTable.getElementsByTagName("tr");
                 for (let i = 1; i < rows.length; i++) {
                     let entries = rows[i].getElementsByTagName("td");
-                    console.log(entries[0].textContent, renameType + " " + (renameIndex+1));
                     if (entries[0].textContent === (renameType + " " + (renameIndex+1))) {
                         entries[1].textContent = newname;
                     }

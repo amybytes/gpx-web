@@ -10,6 +10,7 @@
 *.gpx
 parser/src/test.c
 run.sh
+db.sh
 testFiles
 
 # Workspace files #

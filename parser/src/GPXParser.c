@@ -2138,7 +2138,7 @@ char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, f
 
     tracksList = getTracksBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
     if (tracksList != NULL) {
-        char *tracksListJson = trackListToJSON(tracksList);
+        char *tracksListJson = betterTrackListToJSON(tracksList);
         tracksJson = parseJSONArrayString(tracksListJson);
         free(tracksListJson);
         freeList(tracksList);
