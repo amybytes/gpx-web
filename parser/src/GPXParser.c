@@ -2113,8 +2113,7 @@ char *getRoutesBetweenAsJSON(char *filename, float sourceLat, float sourceLon, f
     List *routesList;
 
     gpxDoc = createGPXdoc(filename);
-
-    routesList = getRoutesBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
+    routesList = getRoutesBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, delta);
     if (routesList != NULL) {
         char *routesListJson = routeListToJSON(routesList);
         routesJson = parseJSONArrayString(routesListJson);
@@ -2136,7 +2135,7 @@ char *getTracksBetweenAsJSON(char *filename, float sourceLat, float sourceLon, f
 
     gpxDoc = createGPXdoc(filename);
 
-    tracksList = getTracksBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, 10);
+    tracksList = getTracksBetween(gpxDoc, sourceLat, sourceLon, destLat, destLon, delta);
     if (tracksList != NULL) {
         char *tracksListJson = betterTrackListToJSON(tracksList);
         tracksJson = parseJSONArrayString(tracksListJson);

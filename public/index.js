@@ -132,6 +132,8 @@ $(document).ready(function() {
             return;
         }
         let waypoints = getFindRouteWaypoints();
+        let toleranceInput = document.getElementById("toleranceInput");
+        let delta = toleranceInput.value;
         $.ajax({
             type: 'get',
             dataType: 'json',
@@ -141,7 +143,8 @@ $(document).ready(function() {
                 startLat: waypoints.start.lat,
                 startLon: waypoints.start.lon,
                 endLat: waypoints.end.lat,
-                endLon: waypoints.end.lon
+                endLon: waypoints.end.lon,
+                delta: delta
             },
             success: function(data) {
                 console.log("Successfully got list of found paths");
