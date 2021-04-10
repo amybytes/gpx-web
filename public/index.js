@@ -389,7 +389,7 @@ $(document).ready(function() {
                 let table = document.getElementById("routePointsQueryTable");
                 clearTable(table);
                 for (let i = 0; i < data.points.length; i++) {
-                    addPointToTable(table, data.points[i]);
+                    addPointToTable(table, data.points[i], false);
                 }
                 if (data.points.length > 0) {
                     $("#routePointsQueryOutput").show();
@@ -433,7 +433,7 @@ $(document).ready(function() {
                 let table = document.getElementById("allFilePointsQueryTable");
                 clearTable(table);
                 for (let i = 0; i < data.points.length; i++) {
-                    addPointToTable(table, data.points[i]);
+                    addPointToTable(table, data.points[i], true);
                 }
                 if (data.points.length > 0) {
                     $("#allFilePointsQueryOutput").show();
@@ -601,7 +601,7 @@ function validateQuery5() {
         $("#shortestLongestRoutesQueryFileSelect").removeClass("is-invalid");
     }
 
-    if (numRoutesEntry.value === "") {
+    if (!numRoutesEntry.value.match("^[0-9]+$")) {
         $("#shortestLongestRoutesQueryNumRoutesEntry").addClass("is-invalid");
         valid = false;
     }
@@ -1279,7 +1279,7 @@ function clearChildren(ele) {
     }
 }
 
-function addPointToTable(table, point) {
+function addPointToTable(table, point, showRouteName) {
     let row = document.createElement("tr");
     let td = document.createElement("td");
     if (point.name === undefined) {
@@ -1295,9 +1295,11 @@ function addPointToTable(table, point) {
     td = document.createElement("td");
     td.innerHTML = point.lon;
     row.appendChild(td);
-    td = document.createElement("td");
-    td.innerHTML = point.routename;
-    row.appendChild(td);
+    if (showRouteName) {
+        td = document.createElement("td");
+        td.innerHTML = point.routename;
+        row.appendChild(td);
+    }
     table.appendChild(row);
 }
 

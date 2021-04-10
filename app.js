@@ -370,7 +370,6 @@ async function insertFileInDB(file, auth) {
       [rows, fields] = await connection.execute("SELECT LAST_INSERT_ID();");
       let routeid = rows[0]["LAST_INSERT_ID()"];
       let points = JSON.parse(libgpxparser.getRouteWaypointsAsJSON("uploads/" + file.name, i));
-      console.log(points);
       for (let j = 0; j < points.length; j++) {
         [rows, fields] = await connection.execute("INSERT INTO POINT (point_index, latitude, longitude, point_name, route_id) VALUES (" + j + ", " + points[j].lat + ", " + points[j].lon + ", '" + points[j].name + "', " + routeid + ");");
       }
@@ -789,8 +788,8 @@ app.get('/db/nlengthroutes', async function(req, res) {
       password: auth.pass,
       database: auth.db
     });
-    let [rows, fields] = await connection.execute("SELECT * FROM (SELECT * FROM ROUTE WHERE gpx_id = (SELECT gpx_id FROM FILE WHERE file_name = '" + file + "') ORDER BY route_len " + sortorder +") AS ROUTES ORDER BY " + orderby + ";");
-    for (let i = 0; i < rows.length && i < numroutes; i++) {
+    let [rows, fields] = await connection.execute("SELECT * FROM (SELECT * FROM ROUTE WHERE gpx_id = (SELECT gpx_id FROM FILE WHERE file_name = '" + file + "') ORDER BY route_len " + sortorder + " LIMIT " + numroutes + ") AS ROUTES ORDER BY " + orderby + ";");
+    for (let i = 0; i < rows.length; i++) {
       routes[i] = {
         name: rows[i].route_name,
         len: rows[i].route_len
