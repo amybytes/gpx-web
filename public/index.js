@@ -1282,12 +1282,10 @@ function clearChildren(ele) {
 function addPointToTable(table, point, showRouteName) {
     let row = document.createElement("tr");
     let td = document.createElement("td");
-    if (point.name === undefined) {
-        td.innerHTML = "";
+    if (point.pointname === null) {
+        point.pointname = "(Untitled)";
     }
-    else {
-        td.innerHTML = point.name;
-    }
+    td.innerHTML = point.pointname;
     row.appendChild(td);
     td = document.createElement("td");
     td.innerHTML = point.lat;
@@ -1297,6 +1295,9 @@ function addPointToTable(table, point, showRouteName) {
     row.appendChild(td);
     if (showRouteName) {
         td = document.createElement("td");
+        if (point.routename === null) {
+            point.routename = "(Untitled)";
+        }
         td.innerHTML = point.routename;
         row.appendChild(td);
     }
@@ -1306,6 +1307,9 @@ function addPointToTable(table, point, showRouteName) {
 function addRouteToTable(table, route) {
     let row = document.createElement("tr");
     let td = document.createElement("td");
+    if (route.name === null) {
+        route.name = "(Untitled)";
+    }
     td.innerHTML = route.name;
     row.appendChild(td);
     td = document.createElement("td");

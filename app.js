@@ -366,12 +366,24 @@ async function insertFileInDB(file, auth) {
     let gpxid = rows[0]["LAST_INSERT_ID()"];
     let routes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + file.name));
     for (let i = 0; i < routes.length; i++) {
-      [rows, fields] = await connection.execute("INSERT INTO ROUTE (route_name, route_len, gpx_id) VALUES ('" + routes[i].name + "', " + routes[i].len + ", " + gpxid + ");");
+      if (routes[i].name !== "None") {
+        routes[i].name = "'" + routes[i].name + "'";
+      }
+      else {
+        routes[i].name = "NULL";
+      }
+      [rows, fields] = await connection.execute("INSERT INTO ROUTE (route_name, route_len, gpx_id) VALUES (" + routes[i].name + ", " + routes[i].len + ", " + gpxid + ");");
       [rows, fields] = await connection.execute("SELECT LAST_INSERT_ID();");
       let routeid = rows[0]["LAST_INSERT_ID()"];
       let points = JSON.parse(libgpxparser.getRouteWaypointsAsJSON("uploads/" + file.name, i));
       for (let j = 0; j < points.length; j++) {
-        [rows, fields] = await connection.execute("INSERT INTO POINT (point_index, latitude, longitude, point_name, route_id) VALUES (" + j + ", " + points[j].lat + ", " + points[j].lon + ", '" + points[j].name + "', " + routeid + ");");
+        if (points[j].name !== "") {
+          points[j].name = "'" + points[j].name + "'";
+        }
+        else {
+          points[j].name = "NULL";
+        }
+        [rows, fields] = await connection.execute("INSERT INTO POINT (point_index, latitude, longitude, point_name, route_id) VALUES (" + j + ", " + points[j].lat + ", " + points[j].lon + ", " + points[j].name + ", " + routeid + ");");
       }
     }
     return 204;
@@ -387,7 +399,7 @@ async function insertFileInDB(file, auth) {
   }
 }
 
-// Insert a GPX file into the database. Only new GPX files will be added.
+// Insert a route into the database
 async function addRouteToDBFile(file, auth) {
   let connection;
   try {
@@ -404,7 +416,13 @@ async function addRouteToDBFile(file, auth) {
     let gpxid = rows[0].gpx_id;
     let routes = JSON.parse(libgpxparser.getGPXRoutesAsJSON("uploads/" + file));
     let newroute = routes[routes.length-1];
-    [rows, fields] = await connection.execute("INSERT INTO ROUTE (route_name, route_len, gpx_id) VALUES ('" + newroute.name + "', " + newroute.len + ", " + gpxid + ");");
+    if (newroute.name !== "None") {
+      newroute.name = "'" + newroute.name + "'";
+    }
+    else {
+      newroute.name = null;
+    }
+    [rows, fields] = await connection.execute("INSERT INTO ROUTE (route_name, route_len, gpx_id) VALUES (" + newroute.name + ", " + newroute.len + ", " + gpxid + ");");
     [rows, fields] = await connection.execute("SELECT LAST_INSERT_ID();");
     let routeid = rows[0]["LAST_INSERT_ID()"];
     let points = JSON.parse(libgpxparser.getRouteWaypointsAsJSON("uploads/" + file, routes.length-1));
@@ -424,7 +442,6 @@ async function addRouteToDBFile(file, auth) {
   }
 }
 
-// Insert a GPX file into the database. Only new GPX files will be added.
 async function renameDBRoute(file, auth, index, newname) {
   let connection;
   try {
@@ -434,6 +451,12 @@ async function renameDBRoute(file, auth, index, newname) {
       password: auth.pass,
       database: auth.db
     });
+    if (newname !== "") {
+      newname = "'" + newname + "'";
+    }
+    else {
+      newname = "NULL";
+    }
     let [rows, fields] = await connection.execute("SELECT gpx_id FROM FILE WHERE file_name = '" + file + "';");
     if (rows.length === 0) {
       return false; // file is NOT in the database; do nothing
@@ -441,7 +464,7 @@ async function renameDBRoute(file, auth, index, newname) {
     let gpxid = rows[0].gpx_id;
     [rows, fields] = await connection.execute("SELECT route_id FROM ROUTE WHERE gpx_id = " + gpxid + " ORDER BY route_id ASC;");
     let routeid = rows[index].route_id;
-    [rows, fields] = await connection.execute("UPDATE ROUTE SET route_name = '" + newname + "' WHERE route_id = " + routeid + ";");
+    [rows, fields] = await connection.execute("UPDATE ROUTE SET route_name = " + newname + " WHERE route_id = " + routeid + ";");
     return true;
   }
   catch (e) {
@@ -683,7 +706,7 @@ app.get('/db/routepoints', async function(req, res) {
       points[i] = {
         lat: rows[i].latitude,
         lon: rows[i].longitude,
-        name: rows[i].name
+        pointname: rows[i].point_name
       };
     }
   }
